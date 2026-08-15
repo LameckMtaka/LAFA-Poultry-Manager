@@ -1,0 +1,18 @@
+LAFA POULTRY MANAGER v2.0 - BUILD APK KWA SIMU TU
+
+1. Fungua https://github.com kwenye Chrome na login.
+2. Bonyeza + kisha New repository.
+3. Jina: LAFA-Poultry-Manager. Chagua Private kama hutaki source iwe public.
+4. Create repository.
+5. Extract ZIP ya LAFA Poultry Manager v2 kwenye simu.
+6. Repo yako: Add file > Upload files. Upload pubspec.yaml, lib folder, scripts folder, README.md na files nyingine.
+7. MUHIMU: hakikisha workflow ipo katika path:
+   .github/workflows/build-apk.yml
+   Ikiwa folder .github halionekani kwenye simu: GitHub > Add file > Create new file; kwenye filename andika .github/workflows/build-apk.yml; kisha copy content kutoka GITHUB_WORKFLOW_COPY.yml na Commit changes.
+8. Fungua tab ACTIONS. Chagua Build Android APK.
+9. Bonyeza Run workflow > Run workflow.
+10. Baada ya run kuwa green, fungua run hiyo. Chini kwenye Artifacts bonyeza LAFA-Poultry-Manager-v2-APK.
+11. Itapakua ZIP ndogo ya artifact. Extract; ndani kuna LAFA-Poultry-Manager-v2.apk.
+12. Bonyeza APK > Install. Ikiomba ruhusa, ruhusu Install unknown apps kwa Chrome/File Manager.
+
+Kumbuka: GitHub workflow lazima iwe kwenye default branch main ndipo Run workflow ionekane.
