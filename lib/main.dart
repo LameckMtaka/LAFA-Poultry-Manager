@@ -12,6 +12,9 @@ import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'services/notifications.dart';
+import 'i18n.dart';
+import 'knowledge.dart';
+import 'vaccine_profiles.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -19,14 +22,37 @@ void main() async {
   runApp(const PoultryApp());
 }
 
-class PoultryApp extends StatelessWidget {
+class PoultryApp extends StatefulWidget {
   const PoultryApp({super.key});
+  @override
+  State<PoultryApp> createState() => _PoultryAppState();
+}
+
+class _PoultryAppState extends State<PoultryApp> {
+  String languageCode = 'sw';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadLanguage();
+  }
+
+  Future<void> _loadLanguage() async {
+    final p = await SharedPreferences.getInstance();
+    if (mounted) setState(() => languageCode = p.getString('app_language') ?? 'sw');
+  }
+
+  Future<void> _setLanguage(String code) async {
+    final p = await SharedPreferences.getInstance();
+    await p.setString('app_language', code);
+    if (mounted) setState(() => languageCode = code);
+  }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'LAFA Poultry Manager',
+      title: 'LAFA Poultry Solution Pro',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF176B43)),
         useMaterial3: true,
@@ -34,7 +60,7 @@ class PoultryApp extends StatelessWidget {
         cardTheme: const CardThemeData(elevation: 0, margin: EdgeInsets.zero),
         inputDecorationTheme: const InputDecorationTheme(border: OutlineInputBorder()),
       ),
-      home: const HomePage(),
+      home: HomePage(languageCode: languageCode, onLanguageChanged: _setLanguage),
     );
   }
 }
@@ -120,10 +146,43 @@ class ChickBatch {
   final int chicks;
   final int mortality;
   final DateTime hatchDate;
-  ChickBatch({required this.id, required this.name, required this.chicks, required this.hatchDate, this.mortality = 0});
-  ChickBatch copyWith({int? mortality}) => ChickBatch(id: id, name: name, chicks: chicks, hatchDate: hatchDate, mortality: mortality ?? this.mortality);
-  Map<String, dynamic> toJson() => {'id': id, 'name': name, 'chicks': chicks, 'mortality': mortality, 'hatchDate': hatchDate.toIso8601String()};
-  factory ChickBatch.fromJson(Map<String, dynamic> j) => ChickBatch(id: j['id'], name: j['name'], chicks: j['chicks'], mortality: j['mortality'] ?? 0, hatchDate: DateTime.parse(j['hatchDate']));
+  final String vaccineProfileId;
+
+  ChickBatch({
+    required this.id,
+    required this.name,
+    required this.chicks,
+    required this.hatchDate,
+    this.mortality = 0,
+    this.vaccineProfileId = defaultVaccineProfileId,
+  });
+
+  ChickBatch copyWith({int? mortality, String? vaccineProfileId}) => ChickBatch(
+        id: id,
+        name: name,
+        chicks: chicks,
+        hatchDate: hatchDate,
+        mortality: mortality ?? this.mortality,
+        vaccineProfileId: vaccineProfileId ?? this.vaccineProfileId,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'name': name,
+        'chicks': chicks,
+        'mortality': mortality,
+        'hatchDate': hatchDate.toIso8601String(),
+        'vaccineProfileId': vaccineProfileId,
+      };
+
+  factory ChickBatch.fromJson(Map<String, dynamic> j) => ChickBatch(
+        id: j['id'],
+        name: j['name'],
+        chicks: j['chicks'],
+        mortality: j['mortality'] ?? 0,
+        hatchDate: DateTime.parse(j['hatchDate']),
+        vaccineProfileId: j['vaccineProfileId'] ?? defaultVaccineProfileId,
+      );
 }
 
 class EnvironmentRecord {
@@ -156,6 +215,7 @@ class AppStore {
   List<ChickBatch> chicks = [];
   List<EnvironmentRecord> environment = [];
   List<CandlingRecord> candling = [];
+  List<VaccineProfile> vaccineProfiles = [];
 
   Future<void> load() async {
     final p = await SharedPreferences.getInstance();
@@ -172,6 +232,8 @@ class AppStore {
     }
     environment = _decodeList(p.getString('environment'), EnvironmentRecord.fromJson);
     candling = _decodeList(p.getString('candling_records'), CandlingRecord.fromJson);
+    vaccineProfiles = _decodeList(p.getString('vaccine_profiles_v41'), VaccineProfile.fromJson);
+    if (vaccineProfiles.isEmpty) vaccineProfiles = defaultVaccineProfiles();
   }
 
   List<T> _decodeList<T>(String? raw, T Function(Map<String, dynamic>) fromJson) {
@@ -191,17 +253,29 @@ class AppStore {
     await p.setString('chicks_v2', jsonEncode(chicks.map((e) => e.toJson()).toList()));
     await p.setString('environment', jsonEncode(environment.map((e) => e.toJson()).toList()));
     await p.setString('candling_records', jsonEncode(candling.map((e) => e.toJson()).toList()));
+    await p.setString('vaccine_profiles_v41', jsonEncode(vaccineProfiles.map((e) => e.toJson()).toList()));
+  }
+
+  VaccineProfile vaccineProfileFor(String id) =>
+      vaccineProfiles.where((p) => p.id == id).firstOrNull ??
+      vaccineProfiles.where((p) => p.id == defaultVaccineProfileId).firstOrNull ??
+      defaultVaccineProfiles().last;
+
+  Future<void> resetVaccineProfiles() async {
+    vaccineProfiles = defaultVaccineProfiles();
+    await save();
   }
 
   Map<String, dynamic> backupJson() => {
-        'app': 'LAFA Poultry Manager',
-        'version': 2,
+        'app': 'LAFA Poultry Solution Pro',
+        'version': 4.1,
         'createdAt': DateTime.now().toIso8601String(),
         'incubators': incubators.map((e) => e.toJson()).toList(),
         'batches': batches.map((e) => e.toJson()).toList(),
         'chicks': chicks.map((e) => e.toJson()).toList(),
         'environment': environment.map((e) => e.toJson()).toList(),
         'candling': candling.map((e) => e.toJson()).toList(),
+        'vaccineProfiles': vaccineProfiles.map((e) => e.toJson()).toList(),
       };
 
   Future<void> restore(Map<String, dynamic> data) async {
@@ -210,18 +284,23 @@ class AppStore {
     chicks = (data['chicks'] as List? ?? []).map((e) => ChickBatch.fromJson(Map<String, dynamic>.from(e))).toList();
     environment = (data['environment'] as List? ?? []).map((e) => EnvironmentRecord.fromJson(Map<String, dynamic>.from(e))).toList();
     candling = (data['candling'] as List? ?? []).map((e) => CandlingRecord.fromJson(Map<String, dynamic>.from(e))).toList();
+    vaccineProfiles = (data['vaccineProfiles'] as List? ?? []).map((e) => VaccineProfile.fromJson(Map<String, dynamic>.from(e))).toList();
+    if (vaccineProfiles.isEmpty) vaccineProfiles = defaultVaccineProfiles();
     await save();
   }
 }
 
 class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+  final String languageCode;
+  final Future<void> Function(String) onLanguageChanged;
+  const HomePage({super.key, required this.languageCode, required this.onLanguageChanged});
   @override
   State<HomePage> createState() => _HomePageState();
 }
 
 class _HomePageState extends State<HomePage> {
   final store = AppStore();
+  String t(String sw, String en) => AppI18n.tr(widget.languageCode, sw, en);
   int index = 0;
   bool loading = true;
 
@@ -246,7 +325,7 @@ class _HomePageState extends State<HomePage> {
     final name = 'LAFA_Poultry_Backup_${DateFormat('yyyyMMdd_HHmm').format(DateTime.now())}.json';
     final file = File('${dir.path}/$name');
     await file.writeAsString(const JsonEncoder.withIndent('  ').convert(store.backupJson()));
-    await Share.shareXFiles([XFile(file.path)], text: 'Backup ya LAFA Poultry Manager');
+    await Share.shareXFiles([XFile(file.path)], text: 'Backup ya LAFA Poultry Manager Pro');
   }
 
   Future<void> _restore() async {
@@ -260,7 +339,7 @@ class _HomePageState extends State<HomePage> {
         await NotificationService.instance.scheduleIncubation(b);
       }
       for (final c in store.chicks) {
-        await NotificationService.instance.scheduleVaccines(c);
+        await NotificationService.instance.scheduleVaccines(c, store.vaccineProfileFor(c.vaccineProfileId));
       }
       if (mounted) {
         setState(() {});
@@ -280,11 +359,11 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _addChicks() async {
-    final c = await showDialog<ChickBatch>(context: context, builder: (_) => const AddChickBatchDialog());
+    final c = await showDialog<ChickBatch>(context: context, builder: (_) => AddChickBatchDialog(profiles: store.vaccineProfiles));
     if (c == null) return;
     store.chicks.insert(0, c);
     await _persist();
-    await NotificationService.instance.scheduleVaccines(c);
+    await NotificationService.instance.scheduleVaccines(c, store.vaccineProfileFor(c.vaccineProfileId));
   }
 
   Future<void> _addIncubator() async {
@@ -296,28 +375,69 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    if (loading) return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    if (loading) return Scaffold(
+      body: Container(
+        width: double.infinity,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter,
+            colors: [Color(0xFFF8FCF9), Color(0xFFE7F2EB)]),
+        ),
+        child: SafeArea(
+          child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+            Container(
+              width: 220, height: 220, padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(48),
+                boxShadow: const [BoxShadow(color: Color(0x22000000), blurRadius: 28, offset: Offset(0,12))]),
+              child: Image.asset('assets/lafa_poultry_solution_logo.png', fit: BoxFit.contain),
+            ),
+            const SizedBox(height: 24),
+            const Text('LAFA POULTRY SOLUTION',
+              style: TextStyle(fontSize: 23, fontWeight: FontWeight.w900, letterSpacing: .5)),
+            const SizedBox(height: 6),
+            Text(t('Suluhisho Kamili la Ufugaji wa Kuku','Complete Poultry Farming Solution'),
+              style: const TextStyle(color: Color(0xFF486157), fontWeight: FontWeight.w600)),
+            const SizedBox(height: 26),
+            const SizedBox(width:30,height:30,child:CircularProgressIndicator(strokeWidth:3)),
+          ]),
+        ),
+      ),
+    );
     final pages = [
-      Dashboard(store: store),
+      Dashboard(store: store, languageCode: widget.languageCode),
       EggBatches(store: store, onChanged: _persist),
-      ChickBatches(store: store, onChanged: _persist),
+      ChickBatches(store: store, onChanged: _persist, languageCode: widget.languageCode),
       IncubatorsPage(store: store, onChanged: _persist),
       CameraCandlingPage(store: store, onChanged: _persist),
+      PoultryKnowledgePage(languageCode: widget.languageCode),
+      VaccineProfilesPage(store: store, onChanged: _persist, languageCode: widget.languageCode),
     ];
     return Scaffold(
       appBar: AppBar(
-        title: const Text('LAFA Poultry Manager v2', style: TextStyle(fontWeight: FontWeight.w900)),
+        title: Row(children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(11),
+            child: Image.asset('assets/lafa_poultry_solution_logo.png', width: 42, height: 42, fit: BoxFit.cover),
+          ),
+          const SizedBox(width: 10),
+          Expanded(child: Text(t('LAFA Poultry Solution','LAFA Poultry Solution'),
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontWeight: FontWeight.w900))),
+        ]),
         actions: [
           PopupMenuButton<String>(
             onSelected: (v) {
               if (v == 'test') NotificationService.instance.showTest();
               if (v == 'backup') _backup();
               if (v == 'restore') _restore();
+              if (v == 'lang_sw') widget.onLanguageChanged('sw');
+              if (v == 'lang_en') widget.onLanguageChanged('en');
             },
-            itemBuilder: (_) => const [
-              PopupMenuItem(value: 'test', child: ListTile(leading: Icon(Icons.notifications_active_outlined), title: Text('Jaribu alarm'))),
-              PopupMenuItem(value: 'backup', child: ListTile(leading: Icon(Icons.backup_outlined), title: Text('Backup / Share'))),
-              PopupMenuItem(value: 'restore', child: ListTile(leading: Icon(Icons.restore), title: Text('Restore backup'))),
+            itemBuilder: (_) => [
+              PopupMenuItem(value: 'lang_sw', child: ListTile(leading: const Icon(Icons.language), title: Text(t('Kiswahili ✓', 'Swahili')))),
+              PopupMenuItem(value: 'lang_en', child: ListTile(leading: const Icon(Icons.language), title: Text(t('English', 'English ✓')))),
+              PopupMenuItem(value: 'test', child: ListTile(leading: const Icon(Icons.notifications_active_outlined), title: Text(t('Jaribu alarm', 'Test alarm')))),
+              const PopupMenuItem(value: 'backup', child: ListTile(leading: Icon(Icons.backup_outlined), title: Text('Backup / Share'))),
+              PopupMenuItem(value: 'restore', child: ListTile(leading: const Icon(Icons.restore), title: Text(t('Rudisha backup', 'Restore backup')))),
             ],
           )
         ],
@@ -333,12 +453,14 @@ class _HomePageState extends State<HomePage> {
       bottomNavigationBar: NavigationBar(
         selectedIndex: index,
         onDestinationSelected: (v) => setState(() => index = v),
-        destinations: const [
-          NavigationDestination(icon: Icon(Icons.dashboard_outlined), selectedIcon: Icon(Icons.dashboard), label: 'Leo'),
-          NavigationDestination(icon: Icon(Icons.egg_outlined), selectedIcon: Icon(Icons.egg), label: 'Mayai'),
-          NavigationDestination(icon: Icon(Icons.pets_outlined), selectedIcon: Icon(Icons.pets), label: 'Makuzi'),
-          NavigationDestination(icon: Icon(Icons.device_thermostat_outlined), selectedIcon: Icon(Icons.device_thermostat), label: 'Incubator'),
-          NavigationDestination(icon: Icon(Icons.camera_alt_outlined), selectedIcon: Icon(Icons.camera_alt), label: 'Candling'),
+        destinations: [
+          NavigationDestination(icon: const Icon(Icons.dashboard_outlined), selectedIcon: const Icon(Icons.dashboard), label: t('Leo','Today')),
+          NavigationDestination(icon: const Icon(Icons.egg_outlined), selectedIcon: const Icon(Icons.egg), label: t('Mayai','Eggs')),
+          NavigationDestination(icon: const Icon(Icons.pets_outlined), selectedIcon: const Icon(Icons.pets), label: t('Makuzi','Grow')),
+          const NavigationDestination(icon: Icon(Icons.device_thermostat_outlined), selectedIcon: Icon(Icons.device_thermostat), label: 'Incubator'),
+          const NavigationDestination(icon: Icon(Icons.camera_alt_outlined), selectedIcon: Icon(Icons.camera_alt), label: 'Candling'),
+          NavigationDestination(icon: const Icon(Icons.menu_book_outlined), selectedIcon: const Icon(Icons.menu_book), label: t('Suluhisho','Guide')),
+          NavigationDestination(icon: const Icon(Icons.vaccines_outlined), selectedIcon: const Icon(Icons.vaccines), label: t('Chanjo','Vaccines')),
         ],
       ),
     );
@@ -347,7 +469,9 @@ class _HomePageState extends State<HomePage> {
 
 class Dashboard extends StatelessWidget {
   final AppStore store;
-  const Dashboard({super.key, required this.store});
+  final String languageCode;
+  const Dashboard({super.key, required this.store, required this.languageCode});
+  String t(String sw, String en) => AppI18n.tr(languageCode, sw, en);
 
   @override
   Widget build(BuildContext context) {
@@ -362,7 +486,7 @@ class Dashboard extends StatelessWidget {
       ]);
     }
     for (final c in store.chicks) {
-      due.addAll(vaccineSchedule(c));
+      due.addAll(vaccineSchedule(c, store.vaccineProfileFor(c.vaccineProfileId)));
     }
     due.removeWhere((e) => e.date.isBefore(DateUtils.dateOnly(now).subtract(const Duration(days: 1))) || e.date.isAfter(now.add(const Duration(days: 8))));
     due.sort((a, b) => a.date.compareTo(b.date));
@@ -375,14 +499,37 @@ class Dashboard extends StatelessWidget {
 
     return ListView(padding: const EdgeInsets.all(16), children: [
       Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(color: const Color(0xFF174F36), borderRadius: BorderRadius.circular(24)),
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight,
+            colors: [Color(0xFF073B2A), Color(0xFF176B43), Color(0xFF2B8C59)]),
+          borderRadius: BorderRadius.circular(28),
+          boxShadow: const [BoxShadow(color: Color(0x1F0B432F), blurRadius: 22, offset: Offset(0,10))],
+        ),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text('Poultry Command Center', style: TextStyle(color: Colors.white, fontSize: 23, fontWeight: FontWeight.w900)),
-          const SizedBox(height: 6),
-          Text('Incubation, candling, hatch, chanjo na makuzi — automatic.', style: TextStyle(color: Colors.white.withValues(alpha: .85))),
-          const SizedBox(height: 18),
-          Row(children: [Expanded(child: _metric('${store.batches.length}', 'Batch mayai')), const SizedBox(width: 10), Expanded(child: _metric('${store.chicks.length}', 'Batch vifaranga'))]),
+          Row(children: [
+            Container(width:88,height:88,padding:const EdgeInsets.all(4),
+              decoration:BoxDecoration(color:Colors.white,borderRadius:BorderRadius.circular(24)),
+              child:Image.asset('assets/lafa_poultry_solution_logo.png',fit:BoxFit.contain)),
+            const SizedBox(width:14),
+            Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+              const Text('LAFA POULTRY SOLUTION',
+                style:TextStyle(color:Colors.white,fontSize:20,fontWeight:FontWeight.w900,letterSpacing:.3)),
+              const SizedBox(height:5),
+              Text(t('Suluhisho Kamili la Ufugaji wa Kuku','Complete Poultry Farming Solution'),
+                style:TextStyle(color:Colors.white.withValues(alpha:.87),fontWeight:FontWeight.w700)),
+              const SizedBox(height:4),
+              Text(t('Incubation • Afya • Chakula • Chanjo • Kumbukumbu',
+                     'Incubation • Health • Feed • Vaccines • Records'),
+                style:TextStyle(color:Colors.white.withValues(alpha:.72),fontSize:12)),
+            ])),
+          ]),
+          const SizedBox(height:18),
+          Row(children:[
+            Expanded(child:_metric('${store.batches.length}',t('Batch mayai','Egg batches'))),
+            const SizedBox(width:10),
+            Expanded(child:_metric('${store.chicks.length}',t('Batch vifaranga','Chick batches'))),
+          ]),
         ]),
       ),
       const SizedBox(height: 14),
@@ -466,26 +613,91 @@ class EggBatches extends StatelessWidget {
 class ChickBatches extends StatelessWidget {
   final AppStore store;
   final Future<void> Function() onChanged;
-  const ChickBatches({super.key, required this.store, required this.onChanged});
+  final String languageCode;
+  const ChickBatches({super.key, required this.store, required this.onChanged, required this.languageCode});
+
+  String t(String sw, String en) => AppI18n.tr(languageCode, sw, en);
+
   @override
   Widget build(BuildContext context) {
-    if (store.chicks.isEmpty) return const Center(child: Padding(padding: EdgeInsets.all(20), child: _EmptyCard(icon: Icons.pets_outlined, title: 'Hakuna batch ya vifaranga', subtitle: 'Ongeza batch baada ya hatch.')));
-    return ListView.builder(padding: const EdgeInsets.fromLTRB(16, 16, 16, 100), itemCount: store.chicks.length, itemBuilder: (_, i) {
-      final c = store.chicks[i];
-      final mortality = c.chicks == 0 ? 0 : c.mortality * 100 / c.chicks;
-      return Padding(padding: const EdgeInsets.only(bottom: 12), child: Card(child: ExpansionTile(
-        leading: const CircleAvatar(child: Icon(Icons.pets)),
-        title: Text(c.name, style: const TextStyle(fontWeight: FontWeight.w900)),
-        subtitle: Text('${c.chicks} vifaranga • Vifo ${c.mortality} (${mortality.toStringAsFixed(1)}%)'),
-        children: [
-          ...vaccineSchedule(c).map((v) => ListTile(contentPadding: const EdgeInsets.symmetric(horizontal: 20), leading: const Icon(Icons.vaccines_outlined), title: Text(v.title), subtitle: Text(fmt(v.date)), trailing: Chip(label: Text(v.dayLabel)))),
-          Padding(padding: const EdgeInsets.all(16), child: FilledButton.tonalIcon(onPressed: () async {
-            final n = await showDialog<int>(context: context, builder: (_) => NumberDialog(title: 'Rekodi vifo', label: 'Jumla ya vifo hadi sasa', initial: c.mortality));
-            if (n != null && n >= 0 && n <= c.chicks) { store.chicks[i] = c.copyWith(mortality: n); await onChanged(); }
-          }, icon: const Icon(Icons.monitor_heart_outlined), label: const Text('Update mortality'))),
-        ],
-      )));
-    });
+    if (store.chicks.isEmpty) {
+      return Center(child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: _EmptyCard(
+          icon: Icons.pets_outlined,
+          title: t('Hakuna batch ya vifaranga', 'No chick batches'),
+          subtitle: t('Ongeza batch baada ya hatch na uchague vaccination profile.', 'Add a batch after hatch and choose a vaccination profile.'),
+        ),
+      ));
+    }
+    return ListView.builder(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+      itemCount: store.chicks.length,
+      itemBuilder: (_, i) {
+        final c = store.chicks[i];
+        final mortality = c.chicks == 0 ? 0 : c.mortality * 100 / c.chicks;
+        final profile = store.vaccineProfileFor(c.vaccineProfileId);
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: Card(
+            child: ExpansionTile(
+              leading: const CircleAvatar(child: Icon(Icons.pets)),
+              title: Text(c.name, style: const TextStyle(fontWeight: FontWeight.w900)),
+              subtitle: Text('${c.chicks} ${t('vifaranga','chicks')} • ${t('Vifo','Deaths')} ${c.mortality} (${mortality.toStringAsFixed(1)}%)\n${t('Ratiba','Profile')}: ${languageCode == 'en' ? profile.nameEn : profile.nameSw}'),
+              children: [
+                ...vaccineSchedule(c, profile).map((v) => ListTile(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 20),
+                  leading: Icon(v.icon),
+                  title: Text(v.title),
+                  subtitle: Text(fmt(v.date)),
+                  trailing: Chip(label: Text(v.dayLabel)),
+                )),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+                  child: DropdownButtonFormField<String>(
+                    value: profile.id,
+                    decoration: InputDecoration(labelText: t('Badilisha vaccination profile', 'Change vaccination profile')),
+                    items: store.vaccineProfiles.map((p) => DropdownMenuItem(
+                      value: p.id,
+                      child: Text(languageCode == 'en' ? p.nameEn : p.nameSw),
+                    )).toList(),
+                    onChanged: (id) async {
+                      if (id == null) return;
+                      final old = store.chicks[i];
+                      store.chicks[i] = old.copyWith(vaccineProfileId: id);
+                      await onChanged();
+                      await NotificationService.instance.cancelVaccineBatch(old.id);
+                      await NotificationService.instance.scheduleVaccines(store.chicks[i], store.vaccineProfileFor(id));
+                    },
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: FilledButton.tonalIcon(
+                    onPressed: () async {
+                      final n = await showDialog<int>(
+                        context: context,
+                        builder: (_) => NumberDialog(
+                          title: t('Rekodi vifo', 'Record mortality'),
+                          label: t('Jumla ya vifo hadi sasa', 'Total deaths to date'),
+                          initial: c.mortality,
+                        ),
+                      );
+                      if (n != null && n >= 0 && n <= c.chicks) {
+                        store.chicks[i] = c.copyWith(mortality: n);
+                        await onChanged();
+                      }
+                    },
+                    icon: const Icon(Icons.monitor_heart_outlined),
+                    label: Text(t('Sasisha mortality', 'Update mortality')),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 }
 
@@ -651,7 +863,8 @@ class _AddEggBatchDialogState extends State<AddEggBatchDialog> {
 }
 
 class AddChickBatchDialog extends StatefulWidget {
-  const AddChickBatchDialog({super.key});
+  final List<VaccineProfile> profiles;
+  const AddChickBatchDialog({super.key, required this.profiles});
   @override
   State<AddChickBatchDialog> createState() => _AddChickBatchDialogState();
 }
@@ -659,12 +872,60 @@ class _AddChickBatchDialogState extends State<AddChickBatchDialog> {
   final name = TextEditingController();
   final count = TextEditingController();
   DateTime date = DateTime.now();
+  String profileId = defaultVaccineProfileId;
+
   @override
-  Widget build(BuildContext context) => AlertDialog(title: const Text('Batch ya vifaranga'), content: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, children: [
-    TextField(controller: name, decoration: const InputDecoration(labelText: 'Jina la batch')), const SizedBox(height: 10),
-    TextField(controller: count, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Idadi ya vifaranga')), const SizedBox(height: 10),
-    ListTile(contentPadding: EdgeInsets.zero, title: const Text('Tarehe ya kutotolewa'), subtitle: Text(fmt(date)), trailing: const Icon(Icons.calendar_month), onTap: () async { final d = await showDatePicker(context: context, initialDate: date, firstDate: DateTime(2020), lastDate: DateTime(2040)); if (d != null) setState(() => date = d); }),
-  ])), actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('Ghairi')), FilledButton(onPressed: () { final n = int.tryParse(count.text); if (name.text.trim().isEmpty || n == null || n <= 0) return; Navigator.pop(context, ChickBatch(id: DateTime.now().microsecondsSinceEpoch.toString(), name: name.text.trim(), chicks: n, hatchDate: date)); }, child: const Text('Hifadhi + chanjo'))]);
+  void initState() {
+    super.initState();
+    if (!widget.profiles.any((p) => p.id == profileId) && widget.profiles.isNotEmpty) {
+      profileId = widget.profiles.first.id;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+    title: const Text('Batch ya vifaranga / Chick batch'),
+    content: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, children: [
+      TextField(controller: name, decoration: const InputDecoration(labelText: 'Jina la batch / Batch name')),
+      const SizedBox(height: 10),
+      TextField(controller: count, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Idadi ya vifaranga / Chick count')),
+      const SizedBox(height: 10),
+      DropdownButtonFormField<String>(
+        value: profileId,
+        decoration: const InputDecoration(labelText: 'Vaccination profile'),
+        items: widget.profiles.map((p) => DropdownMenuItem(value: p.id, child: Text('${p.nameSw} / ${p.nameEn}'))).toList(),
+        onChanged: (v) => setState(() => profileId = v ?? profileId),
+      ),
+      const SizedBox(height: 10),
+      ListTile(
+        contentPadding: EdgeInsets.zero,
+        title: const Text('Tarehe ya kutotolewa / Hatch date'),
+        subtitle: Text(fmt(date)),
+        trailing: const Icon(Icons.calendar_month),
+        onTap: () async {
+          final d = await showDatePicker(context: context, initialDate: date, firstDate: DateTime(2020), lastDate: DateTime(2040));
+          if (d != null) setState(() => date = d);
+        },
+      ),
+    ])),
+    actions: [
+      TextButton(onPressed: () => Navigator.pop(context), child: const Text('Ghairi / Cancel')),
+      FilledButton(
+        onPressed: () {
+          final n = int.tryParse(count.text);
+          if (name.text.trim().isEmpty || n == null || n <= 0) return;
+          Navigator.pop(context, ChickBatch(
+            id: DateTime.now().microsecondsSinceEpoch.toString(),
+            name: name.text.trim(),
+            chicks: n,
+            hatchDate: date,
+            vaccineProfileId: profileId,
+          ));
+        },
+        child: const Text('Hifadhi + alarms / Save'),
+      ),
+    ],
+  );
 }
 
 class AddIncubatorDialog extends StatefulWidget {
@@ -746,6 +1007,289 @@ class _TimelineCard extends StatelessWidget {
     _StaticRow('Kuku wakubwa', 'Kila miezi 3', 'Booster reminder'),
   ])));
 }
+
+class VaccineProfilesPage extends StatefulWidget {
+  final AppStore store;
+  final Future<void> Function() onChanged;
+  final String languageCode;
+  const VaccineProfilesPage({super.key, required this.store, required this.onChanged, required this.languageCode});
+  @override State<VaccineProfilesPage> createState() => _VaccineProfilesPageState();
+}
+
+class _VaccineProfilesPageState extends State<VaccineProfilesPage> {
+  String t(String sw, String en) => AppI18n.tr(widget.languageCode, sw, en);
+
+  Future<void> _editProfile(int index) async {
+    final updated = await showDialog<VaccineProfile>(
+      context: context,
+      builder: (_) => VaccineProfileEditor(
+        profile: widget.store.vaccineProfiles[index],
+        languageCode: widget.languageCode,
+      ),
+    );
+    if (updated == null) return;
+    widget.store.vaccineProfiles[index] = updated;
+    await widget.onChanged();
+    await _rescheduleAffected(updated.id);
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _duplicate(VaccineProfile p) async {
+    final id = 'custom_${DateTime.now().microsecondsSinceEpoch}';
+    final copy = p.copyWith(
+      id: id,
+      builtIn: false,
+      nameSw: '${p.nameSw} - Copy',
+      nameEn: '${p.nameEn} - Copy',
+      events: p.events.map((e) => e.copyWith(id:'${e.id}_$id')).toList(),
+    );
+    widget.store.vaccineProfiles.add(copy);
+    await widget.onChanged();
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _rescheduleAffected(String profileId) async {
+    for (final c in widget.store.chicks.where((x) => x.vaccineProfileId == profileId)) {
+      await NotificationService.instance.cancelVaccineBatch(c.id);
+      await NotificationService.instance.scheduleVaccines(c, widget.store.vaccineProfileFor(profileId));
+    }
+  }
+
+  Future<void> _reset() async {
+    final yes = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text(t('Rudisha ratiba za mwanzo?', 'Reset default profiles?')),
+        content: Text(t('Mabadiliko ya profiles yatafutwa. Batch zako hazitafutwa.', 'Profile edits will be replaced. Your chick batches will remain.')),
+        actions: [
+          TextButton(onPressed:()=>Navigator.pop(context,false), child:Text(t('Ghairi','Cancel'))),
+          FilledButton(onPressed:()=>Navigator.pop(context,true), child:Text(t('Rudisha','Reset'))),
+        ],
+      ),
+    );
+    if (yes != true) return;
+    await widget.store.resetVaccineProfiles();
+    for (final c in widget.store.chicks) {
+      await NotificationService.instance.cancelVaccineBatch(c.id);
+      await NotificationService.instance.scheduleVaccines(c, widget.store.vaccineProfileFor(c.vaccineProfileId));
+    }
+    if (mounted) setState(() {});
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16,16,16,120),
+      children: [
+        Container(
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(colors:[Color(0xFF0F6B45), Color(0xFF20985F)]),
+            borderRadius: BorderRadius.circular(24),
+          ),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            const Icon(Icons.vaccines, color: Colors.white, size: 34),
+            const SizedBox(height:8),
+            Text(t('Vaccination Schedule Profiles','Vaccination Schedule Profiles'), style: const TextStyle(color:Colors.white,fontSize:22,fontWeight:FontWeight.w900)),
+            const SizedBox(height:6),
+            Text(t('Chagua ratiba kwa aina ya kuku, ihariri, ongeza au zima tukio, na alarms za batch husasishwa automatically.',
+                'Choose a schedule by poultry type, edit it, add or disable events, and batch alarms are automatically rescheduled.'),
+                style: TextStyle(color:Colors.white.withValues(alpha:.9))),
+          ]),
+        ),
+        const SizedBox(height:14),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Row(children:[
+              const Icon(Icons.info_outline),
+              const SizedBox(width:10),
+              Expanded(child:Text(t(
+                'Ratiba hutofautiana kwa eneo, hatchery na hali ya magonjwa. Profiles hizi ni msingi editable; thibitisha ratiba ya eneo lako na Afisa/Daktari wa Mifugo.',
+                'Schedules vary by location, hatchery and disease pressure. These are editable starter profiles; confirm your local program with a veterinary professional.'
+              ))),
+            ]),
+          ),
+        ),
+        const SizedBox(height:14),
+        ...List.generate(widget.store.vaccineProfiles.length, (i) {
+          final p = widget.store.vaccineProfiles[i];
+          final enabled = p.events.where((e)=>e.enabled).length;
+          return Padding(
+            padding: const EdgeInsets.only(bottom:10),
+            child: Card(
+              child: ExpansionTile(
+                leading: CircleAvatar(child: Text('${i+1}')),
+                title: Text(widget.languageCode=='en' ? p.nameEn : p.nameSw, style: const TextStyle(fontWeight:FontWeight.w900)),
+                subtitle: Text('${enabled} ${t('matukio','events')} • ${p.builtIn ? t('Built-in (editable)','Built-in (editable)') : t('Custom','Custom')}'),
+                childrenPadding: const EdgeInsets.fromLTRB(16,0,16,14),
+                children:[
+                  Align(alignment:Alignment.centerLeft, child:Text(widget.languageCode=='en' ? p.noteEn : p.noteSw)),
+                  const SizedBox(height:8),
+                  ...p.events.where((e)=>e.enabled).take(8).map((e)=>ListTile(
+                    dense:true,
+                    contentPadding:EdgeInsets.zero,
+                    leading:Icon(vaccineCategoryIcon(e.category)),
+                    title:Text(widget.languageCode=='en' ? e.titleEn : e.titleSw),
+                    trailing:Text('Day ${e.day}', style:const TextStyle(fontWeight:FontWeight.w800)),
+                    subtitle:e.repeatEveryMonths>0 ? Text('${t('Rudia kila','Repeat every')} ${e.repeatEveryMonths} ${t('miezi','months')} × ${e.repeatCount}') : null,
+                  )),
+                  Row(children:[
+                    Expanded(child:FilledButton.tonalIcon(onPressed:()=>_editProfile(i), icon:const Icon(Icons.edit_calendar), label:Text(t('Hariri ratiba','Edit schedule')))),
+                    const SizedBox(width:8),
+                    IconButton(onPressed:()=>_duplicate(p), tooltip:t('Nakili','Duplicate'), icon:const Icon(Icons.copy_all_outlined)),
+                    if (!p.builtIn) IconButton(
+                      onPressed:() async {
+                        final id=p.id;
+                        widget.store.vaccineProfiles.removeAt(i);
+                        for (var x=0;x<widget.store.chicks.length;x++) {
+                          if (widget.store.chicks[x].vaccineProfileId==id) {
+                            widget.store.chicks[x]=widget.store.chicks[x].copyWith(vaccineProfileId:defaultVaccineProfileId);
+                          }
+                        }
+                        await widget.onChanged();
+                        if(mounted)setState((){});
+                      },
+                      icon:const Icon(Icons.delete_outline),
+                    ),
+                  ]),
+                ],
+              ),
+            ),
+          );
+        }),
+        OutlinedButton.icon(onPressed:_reset, icon:const Icon(Icons.restart_alt), label:Text(t('Rudisha default profiles','Reset default profiles'))),
+      ],
+    );
+  }
+}
+
+class VaccineProfileEditor extends StatefulWidget {
+  final VaccineProfile profile;
+  final String languageCode;
+  const VaccineProfileEditor({super.key, required this.profile, required this.languageCode});
+  @override State<VaccineProfileEditor> createState()=>_VaccineProfileEditorState();
+}
+
+class _VaccineProfileEditorState extends State<VaccineProfileEditor> {
+  late VaccineProfile p;
+  late TextEditingController nameSw;
+  late TextEditingController nameEn;
+  late TextEditingController noteSw;
+  late TextEditingController noteEn;
+  String t(String sw,String en)=>AppI18n.tr(widget.languageCode,sw,en);
+
+  @override void initState(){
+    super.initState();
+    p=widget.profile.copyWith(events:widget.profile.events.map((e)=>e.copyWith()).toList());
+    nameSw=TextEditingController(text:p.nameSw);
+    nameEn=TextEditingController(text:p.nameEn);
+    noteSw=TextEditingController(text:p.noteSw);
+    noteEn=TextEditingController(text:p.noteEn);
+  }
+
+  Future<void> _editEvent(int i) async {
+    final e=await showDialog<VaccineEvent>(context:context,builder:(_)=>VaccineEventEditor(event:p.events[i],languageCode:widget.languageCode));
+    if(e!=null)setState(()=>p=p.copyWith(events:[...p.events]..[i]=e));
+  }
+
+  Future<void> _addEvent() async {
+    final blank=VaccineEvent(id:'ev_${DateTime.now().microsecondsSinceEpoch}',titleSw:'Chanjo mpya',titleEn:'New event',day:7);
+    final e=await showDialog<VaccineEvent>(context:context,builder:(_)=>VaccineEventEditor(event:blank,languageCode:widget.languageCode));
+    if(e!=null)setState(()=>p=p.copyWith(events:[...p.events,e]));
+  }
+
+  @override Widget build(BuildContext context)=>AlertDialog(
+    title:Text(t('Hariri vaccination profile','Edit vaccination profile')),
+    content:SizedBox(width:560,child:SingleChildScrollView(child:Column(mainAxisSize:MainAxisSize.min,children:[
+      TextField(controller:nameSw,decoration:const InputDecoration(labelText:'Jina - Kiswahili')),
+      const SizedBox(height:8),
+      TextField(controller:nameEn,decoration:const InputDecoration(labelText:'Name - English')),
+      const SizedBox(height:8),
+      TextField(controller:noteSw,maxLines:2,decoration:const InputDecoration(labelText:'Maelezo - Kiswahili')),
+      const SizedBox(height:8),
+      TextField(controller:noteEn,maxLines:2,decoration:const InputDecoration(labelText:'Notes - English')),
+      const SizedBox(height:14),
+      Row(children:[Expanded(child:Text(t('Matukio ya ratiba','Schedule events'),style:const TextStyle(fontWeight:FontWeight.w900))),IconButton(onPressed:_addEvent,icon:const Icon(Icons.add_circle_outline))]),
+      ...List.generate(p.events.length,(i){
+        final e=p.events[i];
+        return SwitchListTile(
+          value:e.enabled,
+          onChanged:(v)=>setState(()=>p=p.copyWith(events:[...p.events]..[i]=e.copyWith(enabled:v))),
+          secondary:Icon(vaccineCategoryIcon(e.category)),
+          title:Text(widget.languageCode=='en'?e.titleEn:e.titleSw),
+          subtitle:Text('Day ${e.day}${e.repeatEveryMonths>0?' • every ${e.repeatEveryMonths} months × ${e.repeatCount}':''}'),
+        );
+      }),
+      ...List.generate(p.events.length,(i)=>Align(
+        alignment:Alignment.centerRight,
+        child:Wrap(spacing:4,children:[
+          TextButton.icon(onPressed:()=>_editEvent(i),icon:const Icon(Icons.edit,size:18),label:Text('${t('Hariri','Edit')} ${i+1}')),
+          if(p.events.length>1) IconButton(onPressed:()=>setState(()=>p=p.copyWith(events:[...p.events]..removeAt(i))),icon:const Icon(Icons.delete_outline,size:20)),
+        ]),
+      )),
+    ]))),
+    actions:[
+      TextButton(onPressed:()=>Navigator.pop(context),child:Text(t('Ghairi','Cancel'))),
+      FilledButton(onPressed:(){
+        Navigator.pop(context,p.copyWith(nameSw:nameSw.text.trim(),nameEn:nameEn.text.trim(),noteSw:noteSw.text.trim(),noteEn:noteEn.text.trim()));
+      },child:Text(t('Hifadhi na reschedule','Save & reschedule'))),
+    ],
+  );
+}
+
+class VaccineEventEditor extends StatefulWidget {
+  final VaccineEvent event;
+  final String languageCode;
+  const VaccineEventEditor({super.key,required this.event,required this.languageCode});
+  @override State<VaccineEventEditor> createState()=>_VaccineEventEditorState();
+}
+class _VaccineEventEditorState extends State<VaccineEventEditor>{
+  late TextEditingController sw,en,day,months,count;
+  late String category;
+  String t(String a,String b)=>AppI18n.tr(widget.languageCode,a,b);
+  @override void initState(){
+    super.initState();
+    sw=TextEditingController(text:widget.event.titleSw);
+    en=TextEditingController(text:widget.event.titleEn);
+    day=TextEditingController(text:'${widget.event.day}');
+    months=TextEditingController(text:'${widget.event.repeatEveryMonths}');
+    count=TextEditingController(text:'${widget.event.repeatCount}');
+    category=widget.event.category;
+  }
+  @override Widget build(BuildContext context)=>AlertDialog(
+    title:Text(t('Hariri tukio','Edit event')),
+    content:SingleChildScrollView(child:Column(mainAxisSize:MainAxisSize.min,children:[
+      TextField(controller:sw,decoration:const InputDecoration(labelText:'Jina - Kiswahili')),
+      const SizedBox(height:8),
+      TextField(controller:en,decoration:const InputDecoration(labelText:'Name - English')),
+      const SizedBox(height:8),
+      TextField(controller:day,keyboardType:TextInputType.number,decoration:InputDecoration(labelText:t('Siku baada ya kutotolewa','Days after hatch'))),
+      const SizedBox(height:8),
+      DropdownButtonFormField<String>(value:category,decoration:InputDecoration(labelText:t('Aina ya tukio','Event type')),items:[
+        DropdownMenuItem(value:'vaccine',child:Text(t('Chanjo','Vaccine'))),
+        DropdownMenuItem(value:'deworming',child:Text(t('Minyoo','Deworming'))),
+        DropdownMenuItem(value:'management',child:Text(t('Usimamizi','Management'))),
+      ],onChanged:(v)=>setState(()=>category=v??category)),
+      const SizedBox(height:8),
+      TextField(controller:months,keyboardType:TextInputType.number,decoration:InputDecoration(labelText:t('Rudia kila miezi (0 = hapana)','Repeat every months (0 = none)'))),
+      const SizedBox(height:8),
+      TextField(controller:count,keyboardType:TextInputType.number,decoration:InputDecoration(labelText:t('Idadi ya marudio','Number of repeats'))),
+    ])),
+    actions:[
+      TextButton(onPressed:()=>Navigator.pop(context),child:Text(t('Ghairi','Cancel'))),
+      FilledButton(onPressed:(){
+        final d=int.tryParse(day.text)??0;
+        if(d<0||sw.text.trim().isEmpty||en.text.trim().isEmpty)return;
+        Navigator.pop(context,widget.event.copyWith(
+          titleSw:sw.text.trim(),titleEn:en.text.trim(),day:d,category:category,
+          repeatEveryMonths:int.tryParse(months.text)??0,repeatCount:int.tryParse(count.text)??0,
+        ));
+      },child:Text(t('Hifadhi','Save'))),
+    ],
+  );
+}
+
 class _StaticRow extends StatelessWidget {
   final String group, day, task;
   const _StaticRow(this.group, this.day, this.task);
@@ -763,19 +1307,33 @@ class _DueItem {
   _DueItem(this.title, this.batch, this.date, this.icon, [this.dayLabel = '']);
 }
 
-List<_DueItem> vaccineSchedule(ChickBatch c) {
-  final items = <_DueItem>[
-    _DueItem('Newcastle I', c.name, c.hatchDate.add(const Duration(days: 7)), Icons.vaccines, 'Day 7'),
-    _DueItem('Gumboro I', c.name, c.hatchDate.add(const Duration(days: 14)), Icons.vaccines, 'Day 14'),
-    _DueItem('Newcastle II', c.name, c.hatchDate.add(const Duration(days: 21)), Icons.vaccines, 'Day 21'),
-    _DueItem('Gumboro II', c.name, c.hatchDate.add(const Duration(days: 28)), Icons.vaccines, 'Day 28'),
-    _DueItem('Ndui / Fowl Pox', c.name, c.hatchDate.add(const Duration(days: 35)), Icons.vaccines, 'Day 35'),
-  ];
-  var booster = DateTime(c.hatchDate.year, c.hatchDate.month, c.hatchDate.day + 35);
-  for (var i = 1; i <= 12; i++) {
-    booster = DateTime(booster.year, booster.month + 3, booster.day);
-    items.add(_DueItem('Booster ya kuku wakubwa', c.name, booster, Icons.vaccines, 'Miezi 3 × $i'));
+List<_DueItem> vaccineSchedule(ChickBatch c, VaccineProfile profile) {
+  final items = <_DueItem>[];
+  for (final e in profile.events.where((x) => x.enabled)) {
+    final baseDate = c.hatchDate.add(Duration(days: e.day));
+    final label = e.day % 7 == 0 && e.day >= 7 ? 'Week ${e.day ~/ 7}' : 'Day ${e.day}';
+    items.add(_DueItem(
+      e.titleSw,
+      c.name,
+      baseDate,
+      vaccineCategoryIcon(e.category),
+      label,
+    ));
+    if (e.repeatEveryMonths > 0 && e.repeatCount > 0) {
+      var d = baseDate;
+      for (var i = 1; i <= e.repeatCount; i++) {
+        d = DateTime(d.year, d.month + e.repeatEveryMonths, d.day);
+        items.add(_DueItem(
+          '${e.titleSw} #${i + 1}',
+          c.name,
+          d,
+          vaccineCategoryIcon(e.category),
+          'Miezi ${e.repeatEveryMonths} × $i',
+        ));
+      }
+    }
   }
+  items.sort((a, b) => a.date.compareTo(b.date));
   return items;
 }
 
