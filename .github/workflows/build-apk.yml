@@ -58,11 +58,11 @@ jobs:
         run: flutter build apk --release
 
       - name: Rename APK
-        run: cp build/app/outputs/flutter-apk/app-release.apk LAFA-Poultry-Solution-Pro-v4.2.apk
+        run: cp build/app/outputs/flutter-apk/app-release.apk LAFA-Poultry-Solution-Pro-v4.2.2-SYNTAX-FIXED.apk
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: LAFA-Poultry-Solution-Pro-v4.2-APK
-          path: LAFA-Poultry-Solution-Pro-v4.2.apk
+          name: LAFA-Poultry-Solution-Pro-v4.2.2-SYNTAX-FIXED-APK
+          path: LAFA-Poultry-Solution-Pro-v4.2.2-SYNTAX-FIXED.apk
           retention-days: 30
