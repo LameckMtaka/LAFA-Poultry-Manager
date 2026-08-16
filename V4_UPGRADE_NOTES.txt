@@ -1,0 +1,15 @@
+LAFA POULTRY SOLUTION PRO v4.0
+
+MAJOR UPGRADE
+- Poultry Solution Center added: Feed & Formulas, Diseases, Housing & Hygiene, Records.
+- Global language selector added (Kiswahili / English) and saved on the phone.
+- Existing incubation, candling, hatch, chick, vaccine alarms, multi-incubator, environment records and backup retained.
+- Feed formula scaling calculator: select 10–500 kg target and ingredients scale automatically.
+- Knowledge separates Indigenous, Crossbred, Layers and Broilers.
+- Disease decision-support includes Newcastle, Fowl Pox, Coccidiosis, Fowl Typhoid and Infectious Coryza.
+- Safety hardening: drug content is educational; the app avoids prescribing an antibiotic/anticoccidial dose and reminds the user about diagnosis and withdrawal periods.
+- User's LAFA logo/icon retained.
+- GitHub Actions cloud APK builder updated for Android SDK 36 and v4 artifact naming.
+
+SOURCE BASIS
+Content was structured from the poultry farming books supplied by the user, including indigenous chicken, crossbred, broiler, layers, feeding and housing guides. Where books differ on vaccine timing, v4 retains the user's existing operational reminder profile and presents the library as educational guidance rather than silently merging conflicting schedules.

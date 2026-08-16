@@ -1,0 +1,19 @@
+LAFA Poultry Solution Pro v4.2
+
+NEW BRANDING
+- New official LAFA POULTRY SOLUTION logo
+- New Android launcher icon
+- Adaptive icon on LAFA dark-green background
+- Branded startup/loading screen
+- Logo in application header
+- Modern branded dashboard hero
+
+ALL v4.1 FUNCTIONS ARE RETAINED
+- Vaccination profiles: Kienyeji, Broiler, Layer, Chotara, Custom
+- Editable schedules + automatic rescheduling
+- Global Kiswahili / English
+- Incubation Day 8/18/21/22
+- Camera candling assistant
+- Feed/formula tools
+- Disease guide
+- Farm records, mortality, temperature/humidity and backup/restore

@@ -1,0 +1,6 @@
+LAFA Poultry Manager v3.0
+- Uses existing LAFA Company / Mtaka Kuku Farm branding as app asset/icon.
+- Updated file_picker for Android SDK 36 compatibility.
+- GitHub Actions APK build workflow retained and hardened.
+- Dashboard branding upgraded for a cleaner professional presentation.
+- Existing incubation, candling, hatch, vaccine, temperature/humidity, backup and history functions retained.

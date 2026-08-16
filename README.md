@@ -1,42 +1,46 @@
-# LAFA Poultry Manager v2.0 — GitHub Ready
+# LAFA Poultry Solution Pro v4.1.1 FINAL
 
-App ya Android ya incubation, candling, hatch, makuzi na vaccination reminders.
+Offline-first Android poultry management and farming solution.
 
-## Features
-- Camera Candling Assistant: Fertile / Infertile / Dead Embryo / Suspect (experimental image analysis)
-- Day 8 candling alarm
-- Day 18 transfer / lockdown alarm
-- Day 21 hatch alarm
-- Day 22 chick-removal alarm
-- Day 7 Newcastle I
-- Day 14 Gumboro I
-- Day 21 Newcastle II
-- Day 28 Gumboro II
-- Day 35 Ndui / Fowl Pox
-- Adult booster reminder kila baada ya miezi 3
-- Multiple incubators
-- Temperature & humidity records
-- Egg, fertile, infertile, suspect, dead embryo and hatch records
-- Hatch rate %
-- Chick batches and mortality %
-- Batch history
-- Local Android notifications
-- Kiswahili UI
-- JSON backup, share and restore
+## Core modules
+- Modern dashboard and daily reminders
+- Incubation batches: Day 8 candling, Day 18 lockdown, Day 21 hatch, Day 22 chick removal
+- Camera Candling Assistant (experimental decision-support)
+- Chick growth and vaccination reminders
+- Multiple incubators, temperature/humidity records
+- Hatch rate and mortality records
+- Poultry Solution Center: feeding plans, scalable feed formulas, disease library, housing/biosecurity and farm records
+- Kiswahili / English global language selection
+- JSON backup / restore
+- LAFA branding and launcher icon
 
-## Build APK on GitHub (phone only)
-Project already contains `.github/workflows/build-apk.yml`.
+## Build APK on GitHub
+Upload/replace the project files in your existing repository. The workflow must be at:
+`.github/workflows/build-apk.yml`
 
-1. Create a new GitHub repository, for example `LAFA-Poultry-Manager`.
-2. Extract this ZIP on your Android phone.
-3. Upload the project files/folders to the repository and commit them to the default branch (`main`).
-4. Confirm `.github/workflows/build-apk.yml` exists in the repository.
-5. Open **Actions** → **Build Android APK** → **Run workflow**.
-6. Open the completed green workflow run.
-7. Under **Artifacts**, download **LAFA-Poultry-Manager-v2-APK**.
-8. Extract the downloaded artifact ZIP and install `LAFA-Poultry-Manager-v2.apk` on your Android phone.
+Then open **Actions → Build Android APK → Run workflow**. When green, open the run **Summary → Artifacts → LAFA-Poultry-Solution-Pro-v4.1-APK**.
 
-If Android blocks installation, allow **Install unknown apps** for the browser/file manager you used to open the APK.
+## Veterinary safety
+The health library is educational decision-support based on the supplied books. It does not replace diagnosis by a veterinarian/livestock officer. Antibiotics, anticoccidials and other medicines must follow registered product labels, professional advice and egg/meat withdrawal periods.
 
-## Important about Camera Candling
-The v2.0 camera feature is an experimental offline image-analysis assistant. It analyzes image brightness, red/vascular signal and dark regions. It is not a validated veterinary AI model and must not be treated as 100% accurate. Shell color, candling lamp, exposure and camera angle can change the result. Recheck Suspect eggs after 1–2 days and do not discard eggs based only on the app prediction.
+
+## v4.1 FINAL - Vaccination Schedule Profiles
+- Kienyeji / Indigenous
+- Broiler
+- Layer
+- Chotara / Dual-purpose
+- Custom / My Schedule
+- Every profile is editable on the phone
+- Enable/disable individual events
+- Add/delete schedule events
+- Day-after-hatch scheduling
+- Repeat every N months for N repetitions
+- Vaccine/deworming/management event categories
+- Change a profile per chick batch
+- Automatic cancellation + rescheduling of notifications after profile changes
+- Reset all built-in profiles to defaults
+- Profiles are included in JSON Backup/Restore
+- Global Swahili / English setting remains persistent
+
+### Important
+Uploaded poultry guides contain different vaccination schedules. v4.1 keeps these as separate editable starter profiles instead of pretending one schedule is universally correct. Confirm the schedule for your area, hatchery, breed, vaccine manufacturer and disease pressure with a veterinary professional.

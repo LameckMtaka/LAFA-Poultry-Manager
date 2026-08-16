@@ -1,0 +1,16 @@
+LAFA Poultry Solution Pro v4.1 FINAL
+
+GLOBAL IMPROVEMENTS
+- Editable vaccination schedule profiles: Kienyeji, Broiler, Layer, Chotara, Custom.
+- Batch-level vaccination profile selection.
+- Automatic re-scheduling after profile edits.
+- Repeat events in months and deworming/management event categories.
+- Reset defaults and JSON backup/restore for profiles.
+- Global Kiswahili / English preference remains persistent.
+- Existing incubation, candling, hatch, mortality, environment, feed formulas, disease guide,
+  housing/biosecurity, backup and records remain included.
+- GitHub Actions artifact renamed to LAFA-Poultry-Solution-Pro-v4.1-FINAL.apk.
+
+SAFETY / DATA QUALITY
+Uploaded guides contain differing vaccination schedules. The app keeps them as separate editable
+starter profiles. Local veterinary/hatchery/manufacturer guidance should determine the final program.

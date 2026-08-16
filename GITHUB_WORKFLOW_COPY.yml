@@ -38,20 +38,31 @@ jobs:
         run: python3 scripts/patch_android.py
 
       - name: Install packages
-        run: flutter pub get
+        run: |
+          flutter clean
+          flutter pub get
+          dart run flutter_launcher_icons
+
+      - name: Remove generated Flutter test
+        run: rm -rf test
 
       - name: Analyze source
         run: flutter analyze --no-fatal-warnings --no-fatal-infos
+
+      - name: Force Android SDK 36
+        run: |
+          sed -i 's/compileSdk = flutter.compileSdkVersion/compileSdk = 36/g' android/app/build.gradle.kts || true
+          sed -i 's/compileSdk flutter.compileSdkVersion/compileSdk 36/g' android/app/build.gradle || true
 
       - name: Build installable release APK
         run: flutter build apk --release
 
       - name: Rename APK
-        run: cp build/app/outputs/flutter-apk/app-release.apk LAFA-Poultry-Manager-v2.apk
+        run: cp build/app/outputs/flutter-apk/app-release.apk LAFA-Poultry-Solution-Pro-v4.2.apk
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: LAFA-Poultry-Manager-v2-APK
-          path: LAFA-Poultry-Manager-v2.apk
+          name: LAFA-Poultry-Solution-Pro-v4.2-APK
+          path: LAFA-Poultry-Solution-Pro-v4.2.apk
           retention-days: 30

@@ -1,0 +1,23 @@
+LAFA POULTRY SOLUTION PRO v4.1 FINAL - PHONE/GITHUB UPGRADE
+
+1. Extract this ZIP on your phone.
+2. In the same GitHub repository that successfully built v2/v4, replace/upload:
+   - lib/main.dart
+   - lib/i18n.dart
+   - lib/knowledge.dart
+   - lib/vaccine_profiles.dart
+   - lib/services/notifications.dart
+   - pubspec.yaml
+   - scripts/patch_android.py
+   - assets/*
+   - .github/workflows/build-apk.yml
+3. Commit changes to main.
+4. Open Actions > Build Android APK > Run workflow.
+5. When green, open Summary > Artifacts.
+6. Download LAFA-Poultry-Solution-Pro-v4.1-FINAL-APK.
+7. Extract the artifact ZIP and install LAFA-Poultry-Solution-Pro-v4.1-FINAL.apk.
+
+IMPORTANT:
+The app preserves separate editable starter vaccination profiles because the uploaded guides contain
+different schedules. Confirm the final program with a veterinary professional/local hatchery and
+vaccine-manufacturer instructions.

@@ -1,0 +1,14 @@
+PHONE + GITHUB UPDATE
+
+1. Extract the v4.2 ZIP.
+2. In the SAME GitHub repository upload/replace:
+   .github/workflows/build-apk.yml
+   assets/
+   lib/
+   scripts/
+   pubspec.yaml
+3. Commit to main.
+4. Actions > Build Android APK > Run workflow.
+5. When successful: Summary > Artifacts.
+6. Download LAFA-Poultry-Solution-Pro-v4.2-APK.
+7. Extract and install LAFA-Poultry-Solution-Pro-v4.2.apk.

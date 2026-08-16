@@ -1,7 +1,7 @@
 name: lafa_poultry_manager
-description: LAFA Poultry Manager v2 - incubation, camera candling assistant, hatch and vaccination records.
+description: LAFA Poultry Solution Pro v4 - complete poultry farming solution, incubation, feeding, health, records and multilingual guidance.
 publish_to: 'none'
-version: 2.0.0+2
+version: 4.2.0+6
 
 environment:
   sdk: '>=3.4.0 <4.0.0'
@@ -9,34 +9,33 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-
   cupertino_icons: ^1.0.8
-
-  # Notifications
   flutter_local_notifications: ^19.4.2
-  timezone: ^0.10.1
-
-  # Local storage
   shared_preferences: ^2.5.4
-
-  # Dates and formatting
   intl: ^0.20.3
-
-  # Camera / image handling
+  timezone: ^0.10.1
   image_picker: ^1.1.2
   image: ^4.5.4
-
-  # Files and backup
   path_provider: ^2.1.5
   share_plus: ^10.1.4
-
-  # Updated to avoid Android compileSdk 34 issue
   file_picker: ^10.3.8
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^5.0.0
+  flutter_launcher_icons: ^0.14.4
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/lafa_logo.png
+    - assets/lafa_poultry_solution_logo.png
+
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: assets/app_icon.png
+  adaptive_icon_background: "#0B432F"
+  adaptive_icon_foreground: assets/app_icon_foreground.png
+
