@@ -1,0 +1,41 @@
+name: lafa_poultry_manager
+description: LAFA Poultry Solution Pro v4 - complete poultry farming solution, incubation, feeding, health, records and multilingual guidance.
+publish_to: 'none'
+version: 4.2.1+7
+
+environment:
+  sdk: '>=3.4.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  flutter_local_notifications: ^19.4.2
+  shared_preferences: ^2.5.4
+  intl: ^0.20.3
+  timezone: ^0.10.1
+  image_picker: ^1.1.2
+  image: ^4.5.4
+  path_provider: ^2.1.5
+  share_plus: ^10.1.4
+  file_picker: ^10.3.8
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+  flutter_launcher_icons: ^0.14.4
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/lafa_logo.png
+    - assets/lafa_poultry_solution_logo.png
+
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: assets/app_icon.png
+  adaptive_icon_background: "#0B432F"
+  adaptive_icon_foreground: assets/app_icon_foreground.png
+
