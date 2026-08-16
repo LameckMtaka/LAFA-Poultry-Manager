@@ -9,16 +9,29 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+
   cupertino_icons: ^1.0.8
+
+  # Notifications
   flutter_local_notifications: ^19.4.2
-  shared_preferences: ^2.5.4
-  intl: ^0.20.3
   timezone: ^0.10.1
+
+  # Local storage
+  shared_preferences: ^2.5.4
+
+  # Dates and formatting
+  intl: ^0.20.3
+
+  # Camera / image handling
   image_picker: ^1.1.2
   image: ^4.5.4
+
+  # Files and backup
   path_provider: ^2.1.5
   share_plus: ^10.1.4
-  file_picker: ^8.1.7
+
+  # Updated to avoid Android compileSdk 34 issue
+  file_picker: ^10.3.8
 
 dev_dependencies:
   flutter_test:
