@@ -2,6 +2,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 import '../main.dart';
+import '../vaccine_profiles.dart';
 
 class NotificationService {
   NotificationService._();
@@ -44,7 +45,7 @@ class NotificationService {
       tz.TZDateTime.from(when, tz.local),
       details,
       androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-      );
+    );
   }
 
   Future<void> scheduleIncubation(PoultryBatch b) async {
@@ -54,11 +55,22 @@ class NotificationService {
     await _schedule(_id(b.id, 22), 'Toa vifaranga — ${b.name}', 'Siku ya 22: kagua hatch na toa vifaranga salama.', b.setDate.add(const Duration(days: 22)));
   }
 
-  Future<void> scheduleVaccines(ChickBatch c) async {
-    final schedule = vaccineSchedule(c);
-    for (var i = 0; i < schedule.length; i++) {
+  Future<void> scheduleVaccines(ChickBatch c, VaccineProfile profile) async {
+    final schedule = vaccineSchedule(c, profile);
+    for (var i = 0; i < schedule.length && i < 90; i++) {
       final v = schedule[i];
-      await _schedule(_id(c.id, 30 + i), 'Chanjo: ${v.title}', '${c.name}: ${v.dayLabel}. Leo ni siku ya chanjo iliyopangwa.', v.date);
+      await _schedule(
+        _id(c.id, 30 + i),
+        'Poultry Health: ${v.title}',
+        '${c.name}: ${v.dayLabel}. Tukio la ratiba / scheduled poultry-health event.',
+        v.date,
+      );
+    }
+  }
+
+  Future<void> cancelVaccineBatch(String batchId) async {
+    for (var i = 0; i < 90; i++) {
+      await plugin.cancel(_id(batchId, 30 + i));
     }
   }
 
@@ -69,6 +81,6 @@ class NotificationService {
   }
 
   Future<void> showTest() async {
-    await plugin.show(99999999, 'LAFA Poultry Manager', 'Alarm na notification zinafanya kazi.', details);
+    await plugin.show(99999999, 'LAFA Poultry Solution Pro', 'Alarm na notification zinafanya kazi.', details);
   }
 }
