@@ -44,8 +44,7 @@ class NotificationService {
       tz.TZDateTime.from(when, tz.local),
       details,
       androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-      uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
-    );
+      );
   }
 
   Future<void> scheduleIncubation(PoultryBatch b) async {
