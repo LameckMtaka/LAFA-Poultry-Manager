@@ -35,9 +35,9 @@ class _EconomicsState extends State<_Economics>{
   @override Widget build(BuildContext context){
     final cost=n('feed')+n('birds')+n('medicine')+n('labour')+n('utilities')+n('housing')+n('transport')+n('other');
     final profit=n('revenue')-cost;
-    final roi=cost<=0?0:profit/cost*100;
+    final roi=cost<=0?0.0:profit/cost*100;
     final sold=n('sold');
-    final be=sold<=0?0:cost/sold;
+    final be=sold<=0?0.0:cost/sold;
     return ListView(padding:const EdgeInsets.all(16),children:[
       _hero(t('Biashara ya Kundi','Flock Economics'),t('Ingiza mapato na gharama zote; App ihesabu Profit/Loss, ROI na Break-even.','Enter all revenue and costs; the app calculates Profit/Loss, ROI and Break-even.')),
       const SizedBox(height:12),
@@ -63,8 +63,8 @@ class _FarmCalcsState extends State<_FarmCalcs>{
   String t(String sw,String en)=>widget.lang=='en'?en:sw;
   double n(String k)=>_num(x[k]!.text);
   @override Widget build(BuildContext context){
-    double pct(double a,double b)=>b<=0?0:a/b*100;
-    final mort=pct(n('deaths'),n('placed')), lay=pct(n('eggs'),n('hens')), fert=pct(n('fertile'),n('set')), hatch=pct(n('hatched'),n('fertile')), fcr=n('gain')<=0?0:n('feed')/n('gain');
+    double pct(double a,double b)=>b<=0?0.0:a/b*100;
+    final mort=pct(n('deaths'),n('placed')), lay=pct(n('eggs'),n('hens')), fert=pct(n('fertile'),n('set')), hatch=pct(n('hatched'),n('fertile')), fcr=n('gain')<=0?0.0:n('feed')/n('gain');
     return ListView(padding:const EdgeInsets.all(16),children:[
       _card(t('Mortality Rate','Mortality Rate'),['placed','deaths'],[t('Kuku waliowekwa','Birds placed'),t('Vifo','Deaths')],'${mort.toStringAsFixed(2)}%'),
       _card(t('Egg Production Rate','Egg Production Rate'),['hens','eggs'],[t('Kuku hai wanaotaga','Live hens'),t('Mayai leo','Eggs today')],'${lay.toStringAsFixed(2)}%'),

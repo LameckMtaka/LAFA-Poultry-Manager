@@ -31,7 +31,7 @@ class PosSale {
     this.customer='',this.payment='Cash',this.note='',
   });
   double get total=>qty*unitPrice;
-  double get debt=>(total-paid).clamp(0,double.infinity);
+  double get debt=>(total-paid).clamp(0.0,double.infinity).toDouble();
   double get grossProfit=>(unitPrice-costPrice)*qty;
   Map<String,dynamic> toJson()=>{'id':id,'receiptNo':receiptNo,'itemId':itemId,'itemName':itemName,'customer':customer,'payment':payment,'note':note,'qty':qty,'unitPrice':unitPrice,'costPrice':costPrice,'paid':paid,'date':date.toIso8601String()};
   factory PosSale.fromJson(Map<String,dynamic> j)=>PosSale(
@@ -47,7 +47,7 @@ class PurchaseRecord {
   final DateTime date;
   const PurchaseRecord({required this.id,required this.itemId,required this.itemName,required this.qty,required this.unitCost,required this.paid,required this.date,this.supplier='',this.payment='Cash',this.note=''});
   double get total=>qty*unitCost;
-  double get balance=>(total-paid).clamp(0,double.infinity);
+  double get balance=>(total-paid).clamp(0.0,double.infinity).toDouble();
   Map<String,dynamic> toJson()=>{'id':id,'itemId':itemId,'itemName':itemName,'supplier':supplier,'payment':payment,'note':note,'qty':qty,'unitCost':unitCost,'paid':paid,'date':date.toIso8601String()};
   factory PurchaseRecord.fromJson(Map<String,dynamic> j)=>PurchaseRecord(
     id:j['id'],itemId:j['itemId'],itemName:j['itemName'],supplier:j['supplier']??'',payment:j['payment']??'Cash',note:j['note']??'',
@@ -100,7 +100,7 @@ class PosStore {
     await p.setString('pos_closings_v52',jsonEncode(closings.map((e)=>e.toJson()).toList()));
   }
   double paidForSale(String saleId)=>debtPayments.where((x)=>x.saleId==saleId).fold(0,(a,b)=>a+b.amount);
-  double saleDebt(PosSale s)=>(s.debt-paidForSale(s.id)).clamp(0,double.infinity);
+  double saleDebt(PosSale s)=>(s.debt-paidForSale(s.id)).clamp(0.0,double.infinity).toDouble();
   double get totalReceivables=>sales.fold(0,(a,s)=>a+saleDebt(s));
   double get stockValue=>stock.fold(0,(a,s)=>a+s.qty*s.costPrice);
   List<StockItem> get lowStock=>stock.where((s)=>s.qty<=s.reorderLevel).toList();
@@ -269,7 +269,7 @@ class _SaleDialogState extends State<_SaleDialog>{
     TextField(controller:paid,keyboardType:TextInputType.number,decoration:InputDecoration(labelText:t('Kiasi kilicholipwa','Amount paid'),prefixText:'TZS ')),
     TextField(controller:note,decoration:InputDecoration(labelText:t('Maelezo','Notes'))),
   ])),actions:[TextButton(onPressed:()=>Navigator.pop(context),child:Text(t('Ghairi','Cancel'))),FilledButton(onPressed:(){
-    final q=double.tryParse(qty.text)??0,p=double.tryParse(price.text.replaceAll(',',''))??0,total=q*p;double pd=double.tryParse(paid.text.replaceAll(',',''))??(payment=='Credit'?0:total);if(q<=0||p<0||q>item.qty)return;pd=pd.clamp(0,total);
+    final q=double.tryParse(qty.text)??0,p=double.tryParse(price.text.replaceAll(',',''))??0,total=q*p;double pd=double.tryParse(paid.text.replaceAll(',',''))??(payment=='Credit'?0:total);if(q<=0||p<0||q>item.qty)return;pd=pd.clamp(0.0,total).toDouble();
     final no='LPS-${DateFormat('yyyyMMdd').format(DateTime.now())}-${widget.saleNo.toString().padLeft(4,'0')}';
     Navigator.pop(context,PosSale(id:DateTime.now().microsecondsSinceEpoch.toString(),receiptNo:no,itemId:item.id,itemName:item.name,qty:q,unitPrice:p,costPrice:item.costPrice,paid:pd,date:DateTime.now(),customer:customer.text.trim(),payment:payment,note:note.text.trim()));
   },child:Text(t('Complete Sale','Complete Sale')))]);
@@ -296,7 +296,7 @@ class _PurchaseDialogState extends State<_PurchaseDialog>{
   DropdownButtonFormField(value:payment,items:['Cash','Mobile Money','Bank','Credit'].map((e)=>DropdownMenuItem(value:e,child:Text(e))).toList(),onChanged:(v)=>setState(()=>payment=v!),decoration:InputDecoration(labelText:t('Payment','Payment'))),
   TextField(controller:paid,keyboardType:TextInputType.number,decoration:InputDecoration(labelText:t('Amount paid','Amount paid'),prefixText:'TZS ')),
   TextField(controller:note,decoration:InputDecoration(labelText:t('Maelezo','Notes'))),
- ])),actions:[TextButton(onPressed:()=>Navigator.pop(context),child:Text(t('Ghairi','Cancel'))),FilledButton(onPressed:(){final q=double.tryParse(qty.text)??0,c=double.tryParse(cost.text)??0,total=q*c,pd=(double.tryParse(paid.text)??(payment=='Credit'?0:total)).clamp(0,total);if(q<=0||c<0)return;Navigator.pop(context,PurchaseRecord(id:DateTime.now().microsecondsSinceEpoch.toString(),itemId:item.id,itemName:item.name,qty:q,unitCost:c,paid:pd,date:DateTime.now(),supplier:supplier.text.trim(),payment:payment,note:note.text.trim()));},child:Text(t('Receive Stock','Receive Stock')))]);
+ ])),actions:[TextButton(onPressed:()=>Navigator.pop(context),child:Text(t('Ghairi','Cancel'))),FilledButton(onPressed:(){final q=double.tryParse(qty.text)??0,c=double.tryParse(cost.text)??0,total=q*c,pd=(double.tryParse(paid.text)??(payment=='Credit'?0.0:total)).clamp(0.0,total).toDouble();if(q<=0||c<0)return;Navigator.pop(context,PurchaseRecord(id:DateTime.now().microsecondsSinceEpoch.toString(),itemId:item.id,itemName:item.name,qty:q,unitCost:c,paid:pd,date:DateTime.now(),supplier:supplier.text.trim(),payment:payment,note:note.text.trim()));},child:Text(t('Receive Stock','Receive Stock')))]);
 }
 
 class _Debts extends StatelessWidget{
