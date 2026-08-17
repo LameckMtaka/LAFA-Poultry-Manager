@@ -1,4 +1,4 @@
-name: Build Android APK
+name: Build Android APK & Google Play AAB
 
 on:
   workflow_dispatch:
@@ -9,30 +9,37 @@ permissions:
   contents: read
 
 jobs:
-  build-apk:
+  build-android:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
 
     steps:
       - name: Checkout source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Java 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
 
       - name: Install Flutter stable
         run: |
-          git clone https://github.com/flutter/flutter.git --depth 1 --branch stable "$HOME/flutter"
+          git clone https://github.com/flutter/flutter.git \
+            --depth 1 \
+            --branch stable \
+            "$HOME/flutter"
           echo "$HOME/flutter/bin" >> "$GITHUB_PATH"
 
       - name: Flutter version
         run: flutter --version
 
       - name: Create Android platform files
-        run: flutter create --platforms=android --org com.lafasoftware --project-name lafa_poultry_manager .
+        run: |
+          flutter create \
+            --platforms=android \
+            --org com.lafasoftware \
+            --project-name lafa_poultry_manager .
 
       - name: Patch Android permissions and notifications
         run: python3 scripts/patch_android.py
@@ -51,8 +58,17 @@ jobs:
 
       - name: Force Android SDK 36
         run: |
-          sed -i 's/compileSdk = flutter.compileSdkVersion/compileSdk = 36/g' android/app/build.gradle.kts || true
-          sed -i 's/compileSdk flutter.compileSdkVersion/compileSdk 36/g' android/app/build.gradle || true
+          sed -i \
+            's/compileSdk = flutter.compileSdkVersion/compileSdk = 36/g' \
+            android/app/build.gradle.kts || true
+
+          sed -i \
+            's/compileSdk flutter.compileSdkVersion/compileSdk 36/g' \
+            android/app/build.gradle || true
+
+      # ==========================================================
+      # APK - INSTALL DIRECTLY ON ANDROID
+      # ==========================================================
 
       - name: Build universal release APK
         run: flutter build apk --release
@@ -60,24 +76,72 @@ jobs:
       - name: Save universal APK
         run: |
           mkdir -p release_apks
-          cp build/app/outputs/flutter-apk/app-release.apk release_apks/LAFA-Poultry-Solution-Pro-v5.0-UNIVERSAL.apk
+
+          cp \
+            build/app/outputs/flutter-apk/app-release.apk \
+            release_apks/LAFA-Poultry-Solution-Pro-v5.2-UNIVERSAL.apk
+
+      # ==========================================================
+      # SMALLER DEVICE-SPECIFIC APK FILES
+      # ==========================================================
 
       - name: Build smaller ABI-specific APKs
         run: flutter build apk --release --split-per-abi
 
       - name: Collect optimized APKs
         run: |
-          cp build/app/outputs/flutter-apk/app-arm64-v8a-release.apk release_apks/LAFA-Poultry-Solution-Pro-v5.0-ARM64.apk
-          cp build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk release_apks/LAFA-Poultry-Solution-Pro-v5.0-ARM32.apk
-          cp build/app/outputs/flutter-apk/app-x86_64-release.apk release_apks/LAFA-Poultry-Solution-Pro-v5.0-X86_64.apk
+          cp \
+            build/app/outputs/flutter-apk/app-arm64-v8a-release.apk \
+            release_apks/LAFA-Poultry-Solution-Pro-v5.2-ARM64.apk
+
+          cp \
+            build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk \
+            release_apks/LAFA-Poultry-Solution-Pro-v5.2-ARM32.apk
+
+          cp \
+            build/app/outputs/flutter-apk/app-x86_64-release.apk \
+            release_apks/LAFA-Poultry-Solution-Pro-v5.2-X86_64.apk
 
       - name: Show APK sizes
         run: ls -lh release_apks
 
-      - name: Upload optimized APK package
+      # ==========================================================
+      # GOOGLE PLAY APP BUNDLE
+      # ==========================================================
+
+      - name: Build Google Play App Bundle
+        run: flutter build appbundle --release
+
+      - name: Prepare Google Play AAB
+        run: |
+          mkdir -p release_aab
+
+          cp \
+            build/app/outputs/bundle/release/app-release.aab \
+            release_aab/LAFA-Poultry-Solution-Pro-v5.2-GOOGLE-PLAY.aab
+
+          ls -lh release_aab
+
+      # ==========================================================
+      # UPLOAD APK ARTIFACT
+      # ==========================================================
+
+      - name: Upload Android APK package
         uses: actions/upload-artifact@v4
         with:
-          name: LAFA-Poultry-Solution-Pro-v5.0-PRO-APK
+          name: LAFA-Poultry-Solution-Pro-v5.2-APK
           path: release_apks/*.apk
+          if-no-files-found: error
+          retention-days: 30
+
+      # ==========================================================
+      # UPLOAD GOOGLE PLAY AAB
+      # ==========================================================
+
+      - name: Upload Google Play AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: LAFA-Poultry-Solution-Pro-v5.2-GOOGLE-PLAY-AAB
+          path: release_aab/*.aab
           if-no-files-found: error
           retention-days: 30
