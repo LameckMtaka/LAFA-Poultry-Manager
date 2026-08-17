@@ -14,6 +14,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'services/notifications.dart';
 import 'i18n.dart';
 import 'knowledge.dart';
+import 'pro_tools.dart';
+import 'business_suite.dart';
+import 'pos_inventory.dart';
 import 'vaccine_profiles.dart';
 
 void main() async {
@@ -410,6 +413,9 @@ class _HomePageState extends State<HomePage> {
       CameraCandlingPage(store: store, onChanged: _persist),
       PoultryKnowledgePage(languageCode: widget.languageCode),
       VaccineProfilesPage(store: store, onChanged: _persist, languageCode: widget.languageCode),
+      BusinessSuitePage(languageCode: widget.languageCode),
+      PosInventoryPage(languageCode: widget.languageCode),
+      ProToolsPage(languageCode: widget.languageCode),
     ];
     return Scaffold(
       appBar: AppBar(
@@ -461,6 +467,9 @@ class _HomePageState extends State<HomePage> {
           const NavigationDestination(icon: Icon(Icons.camera_alt_outlined), selectedIcon: Icon(Icons.camera_alt), label: 'Candling'),
           NavigationDestination(icon: const Icon(Icons.menu_book_outlined), selectedIcon: const Icon(Icons.menu_book), label: t('Suluhisho','Guide')),
           NavigationDestination(icon: const Icon(Icons.vaccines_outlined), selectedIcon: const Icon(Icons.vaccines), label: t('Chanjo','Vaccines')),
+          NavigationDestination(icon: const Icon(Icons.auto_graph), selectedIcon: const Icon(Icons.insights), label: t('Biashara','Business')),
+          NavigationDestination(icon: const Icon(Icons.point_of_sale_outlined), selectedIcon: const Icon(Icons.point_of_sale), label: t('POS','POS')),
+          NavigationDestination(icon: const Icon(Icons.calculate_outlined), selectedIcon: const Icon(Icons.calculate), label: t('Zana','Tools')),
         ],
       ),
     );

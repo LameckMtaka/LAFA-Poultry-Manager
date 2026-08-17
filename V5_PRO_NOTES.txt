@@ -1,0 +1,8 @@
+LAFA Poultry Solution Pro v5.0
+Professional farmer-facing edition:
+- Profit & Loss, ROI, break-even
+- Mortality, laying rate, fertility, hatch rate, FCR calculators
+- Droppings colour/appearance decision-support guide
+- Offline poultry Q&A
+- Clean farmer-facing wording
+- Keeps incubation, candling, vaccination profiles, feed formulas, disease guide, farm records and backup

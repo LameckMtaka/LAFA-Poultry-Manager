@@ -1,0 +1,19 @@
+LAFA POULTRY SOLUTION PRO v4.2.3
+MOBILE INSTALL OPTIMIZED
+
+After GitHub Actions succeeds:
+Summary > Artifacts > LAFA-Poultry-Solution-Pro-v4.2.3-MOBILE-APK
+
+Inside you will find:
+- LAFA-Poultry-Solution-Pro-v4.2.3-ARM64.apk
+  Recommended first for most modern Android phones/tablets.
+- LAFA-Poultry-Solution-Pro-v4.2.3-ARM32.apk
+  For older 32-bit ARM devices.
+- LAFA-Poultry-Solution-Pro-v4.2.3-X86_64.apk
+  Mostly emulators/special x86_64 devices.
+- LAFA-Poultry-Solution-Pro-v4.2.3-UNIVERSAL.apk
+  Largest fallback APK.
+
+Install only ONE APK.
+Free at least 2-3 GB internal storage and restart the phone before installing.
+Try ARM64 first. If Android says incompatible, try ARM32.

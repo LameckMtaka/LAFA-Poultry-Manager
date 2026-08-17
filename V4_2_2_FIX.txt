@@ -1,0 +1,16 @@
+v4.2.2 syntax repair
+
+GitHub reported:
+lib/knowledge.dart:169:5 Expected to find ')'
+
+Root cause:
+The disease cards use:
+...list.map((d) => Card(... ExpansionTile(...)))
+which opens map(), Card(), and ExpansionTile(): three parentheses.
+The generated v4.2.1 source closed only two at the end of that expression.
+
+Corrected:
+      )))
+    ]);
+
+No feature was removed.

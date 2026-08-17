@@ -1,0 +1,26 @@
+LAFA Poultry Solution Pro v5.2 — POULTRY POS & INVENTORY
+
+NEW
+- Poultry product stock master
+- Categories: Eggs, Chickens, Chicks, Feed, Medicine, Vaccine, Manure, Other
+- Opening stock, unit, cost price, selling price, reorder level
+- Low-stock alerts
+- Purchases automatically add stock and update cost
+- POS sales automatically reduce stock
+- Automatic receipt numbers
+- Walk-in or named customers
+- Cash, Mobile Money, Bank and Credit sales
+- Customer receivables/debts
+- Debt repayment records
+- Receipt viewer
+- Daily cash closing with expected cash, counted cash and variance
+- Inventory stock valuation
+- Daily / Weekly / Monthly sales totals
+- Daily / Weekly / Monthly gross profit
+- Poultry POS dashboard
+
+RETAINED
+- v5.1 Business income/expense register
+- Farm Profit/Loss and calculators
+- Incubation, candling, vaccines, feed formulas, diseases, droppings guide, Q&A
+- Global Kiswahili / English

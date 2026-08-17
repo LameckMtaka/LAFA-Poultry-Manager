@@ -1,7 +1,7 @@
 name: lafa_poultry_manager
 description: LAFA Poultry Solution Pro v4 - complete poultry farming solution, incubation, feeding, health, records and multilingual guidance.
 publish_to: 'none'
-version: 4.2.1+7
+version: 5.2.0+12
 
 environment:
   sdk: '>=3.4.0 <4.0.0'

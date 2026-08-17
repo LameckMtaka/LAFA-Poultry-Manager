@@ -44,3 +44,8 @@ The health library is educational decision-support based on the supplied books. 
 
 ### Important
 Uploaded poultry guides contain different vaccination schedules. v4.1 keeps these as separate editable starter profiles instead of pretending one schedule is universally correct. Confirm the schedule for your area, hatchery, breed, vaccine manufacturer and disease pressure with a veterinary professional.
+
+
+## v4.2.3 MOBILE INSTALL OPTIMIZED
+GitHub Actions creates ARM64, ARM32, x86_64 and Universal APKs.
+Install only one. ARM64 is the recommended first choice for most modern Android devices.

@@ -54,15 +54,30 @@ jobs:
           sed -i 's/compileSdk = flutter.compileSdkVersion/compileSdk = 36/g' android/app/build.gradle.kts || true
           sed -i 's/compileSdk flutter.compileSdkVersion/compileSdk 36/g' android/app/build.gradle || true
 
-      - name: Build installable release APK
+      - name: Build universal release APK
         run: flutter build apk --release
 
-      - name: Rename APK
-        run: cp build/app/outputs/flutter-apk/app-release.apk LAFA-Poultry-Solution-Pro-v4.2.apk
+      - name: Save universal APK
+        run: |
+          mkdir -p release_apks
+          cp build/app/outputs/flutter-apk/app-release.apk release_apks/LAFA-Poultry-Solution-Pro-v5.2-UNIVERSAL.apk
 
-      - name: Upload APK
+      - name: Build smaller ABI-specific APKs
+        run: flutter build apk --release --split-per-abi
+
+      - name: Collect optimized APKs
+        run: |
+          cp build/app/outputs/flutter-apk/app-arm64-v8a-release.apk release_apks/LAFA-Poultry-Solution-Pro-v5.2-ARM64.apk
+          cp build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk release_apks/LAFA-Poultry-Solution-Pro-v5.2-ARM32.apk
+          cp build/app/outputs/flutter-apk/app-x86_64-release.apk release_apks/LAFA-Poultry-Solution-Pro-v5.2-X86_64.apk
+
+      - name: Show APK sizes
+        run: ls -lh release_apks
+
+      - name: Upload optimized APK package
         uses: actions/upload-artifact@v4
         with:
-          name: LAFA-Poultry-Solution-Pro-v4.2-APK
-          path: LAFA-Poultry-Solution-Pro-v4.2.apk
+          name: LAFA-Poultry-Solution-Pro-v5.2-POS-INVENTORY-APK
+          path: release_apks/*.apk
+          if-no-files-found: error
           retention-days: 30

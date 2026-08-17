@@ -132,7 +132,7 @@ List<VaccineProfile> defaultVaccineProfiles() => const [
     nameSw: 'Kienyeji',
     nameEn: 'Indigenous',
     builtIn: true,
-    noteSw: 'Profile ya kuanzia inayotokana na ratiba zilizo kwenye miongozo uliyopakia. Ratiba za eneo zinaweza kutofautiana; ihakikishe na mtaalamu wa mifugo.',
+    noteSw: 'Profile ya kuanzia inayotokana na ratiba zilizo kwenye miongozo ya ufugaji. Ratiba za eneo zinaweza kutofautiana; ihakikishe na mtaalamu wa mifugo.',
     noteEn: 'Starter profile based on schedules in the uploaded guides. Local programs may differ; confirm with a veterinary professional.',
     events: [
       VaccineEvent(id:'k-nc1', titleSw:'Kideri / Newcastle I', titleEn:'Newcastle I', day:3),
@@ -175,7 +175,7 @@ List<VaccineProfile> defaultVaccineProfiles() => const [
     nameSw: 'Chotara',
     nameEn: 'Dual-purpose / Crossbred',
     builtIn: true,
-    noteSw: 'Profile salama ya kuanzia inayofuata ratiba yako ya awali. Kwa kuwa miongozo uliyopakia haina ratiba moja ya chanjo inayofanana kwa chotara wote, profile hii imeachwa editable.',
+    noteSw: 'Profile salama ya kuanzia inayofuata ratiba ya msingi. Kwa kuwa miongozo ya ufugaji haina ratiba moja ya chanjo inayofanana kwa chotara wote, profile hii imeachwa editable.',
     noteEn: 'Editable starter profile based on your original operational schedule. The uploaded guides do not provide one universal schedule for all crossbreds.',
     events: [
       VaccineEvent(id:'c-nc1', titleSw:'Newcastle I', titleEn:'Newcastle I', day:7),
@@ -191,8 +191,8 @@ List<VaccineProfile> defaultVaccineProfiles() => const [
     nameSw: 'Custom / Ratiba Yangu',
     nameEn: 'Custom / My Schedule',
     builtIn: true,
-    noteSw: 'Hii ndiyo ratiba yako ya awali: Day 7 Newcastle, Day 14 Gumboro, Day 21 Newcastle II, Day 28 Gumboro II, Day 35 Ndui, kisha booster kila miezi 3.',
-    noteEn: 'Your original schedule: Day 7 Newcastle, Day 14 Gumboro, Day 21 Newcastle II, Day 28 Gumboro II, Day 35 Fowl Pox, then a booster every 3 months.',
+    noteSw: 'Hii ndiyo ratiba ya msingi: Day 7 Newcastle, Day 14 Gumboro, Day 21 Newcastle II, Day 28 Gumboro II, Day 35 Ndui, kisha booster kila miezi 3.',
+    noteEn: 'Base schedule: Day 7 Newcastle, Day 14 Gumboro, Day 21 Newcastle II, Day 28 Gumboro II, Day 35 Fowl Pox, then a booster every 3 months.',
     events: [
       VaccineEvent(id:'x-nc1', titleSw:'Newcastle I', titleEn:'Newcastle I', day:7),
       VaccineEvent(id:'x-gu1', titleSw:'Gumboro I', titleEn:'Gumboro I', day:14),

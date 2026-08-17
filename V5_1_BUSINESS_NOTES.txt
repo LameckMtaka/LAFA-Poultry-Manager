@@ -1,0 +1,11 @@
+LAFA Poultry Solution Pro v5.1 BUSINESS PRO
+- Persistent Sales Register
+- Sales: chickens, eggs, chicks or any poultry product
+- Quantity x unit price automatic totals
+- Customer and payment method
+- Income register
+- Expense register with poultry expense categories
+- Automatic Total Income, Total Expenses, Net Profit/Loss
+- Profit Margin
+- Separate Farm Calculators/Decision Support tools
+- Records remain on the phone through SharedPreferences
