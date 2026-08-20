@@ -1,0 +1,39 @@
+LAFA Poultry Solution Pro v5.4 — ADMIN & CONTENT MANAGER
+
+ADMIN
+- First launch creates a local Admin PIN.
+- Admin PIN is required before opening Admin Center.
+- Reset Admin PIN is available from inside Admin Center.
+
+CONTENT MANAGEMENT
+Admin can Add / Edit / Delete / Publish / Unpublish:
+- Diseases
+- Treatments / management advice
+- Feed notes / formulas
+- FAQs
+- General guides
+- Vaccination notes
+- Announcements
+
+CONTENT UPDATES
+- Export JSON Content Pack
+- Import JSON Content Pack
+- Published content is visible to users under Knowledge Updates
+- This allows frequent content updates without rebuilding the APK.
+- New code/features, Android permissions, plugins and structural UI changes still require a new APK/AAB release.
+
+CONTACT / BRAND
+- Phone 1 default: +255767006454
+- WhatsApp default: +255767006454
+- Website: https://lafasoftware.co.tz
+- Email: info@lafasoftware.co.tz
+- Copyright: © 2026 LAFA Software Company LTD. All rights reserved.
+
+RETAINED
+- v5.3 Edit/Delete interactive records
+- POS & Inventory
+- Business income/expense
+- Incubation and candling
+- Vaccination profiles
+- Disease/feed/knowledge guides
+- Profit/Loss and farm calculators

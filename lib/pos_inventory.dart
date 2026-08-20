@@ -99,6 +99,47 @@ class PosStore {
     await p.setString('pos_debt_payments_v52',jsonEncode(debtPayments.map((e)=>e.toJson()).toList()));
     await p.setString('pos_closings_v52',jsonEncode(closings.map((e)=>e.toJson()).toList()));
   }
+  Future<void> updateSale(PosSale oldSale, PosSale newSale) async {
+    final oldIndex=stock.indexWhere((x)=>x.id==oldSale.itemId);
+    if(oldIndex>=0) stock[oldIndex]=stock[oldIndex].copyWith(qty:stock[oldIndex].qty+oldSale.qty);
+    final newIndex=stock.indexWhere((x)=>x.id==newSale.itemId);
+    if(newIndex<0) throw Exception('Stock item not found');
+    if(stock[newIndex].qty<newSale.qty) {
+      if(oldIndex>=0) stock[oldIndex]=stock[oldIndex].copyWith(qty:stock[oldIndex].qty-oldSale.qty);
+      throw Exception('Insufficient stock');
+    }
+    stock[newIndex]=stock[newIndex].copyWith(qty:stock[newIndex].qty-newSale.qty);
+    final idx=sales.indexWhere((x)=>x.id==oldSale.id);
+    if(idx>=0)sales[idx]=newSale;
+    await save();
+  }
+
+  Future<void> deleteSale(PosSale sale) async {
+    final i=stock.indexWhere((x)=>x.id==sale.itemId);
+    if(i>=0)stock[i]=stock[i].copyWith(qty:stock[i].qty+sale.qty);
+    sales.removeWhere((x)=>x.id==sale.id);
+    debtPayments.removeWhere((x)=>x.saleId==sale.id);
+    await save();
+  }
+
+  Future<void> updatePurchase(PurchaseRecord oldP, PurchaseRecord newP) async {
+    final oi=stock.indexWhere((x)=>x.id==oldP.itemId);
+    if(oi>=0)stock[oi]=stock[oi].copyWith(qty:stock[oi].qty-oldP.qty);
+    final ni=stock.indexWhere((x)=>x.id==newP.itemId);
+    if(ni<0)throw Exception('Stock item not found');
+    stock[ni]=stock[ni].copyWith(qty:stock[ni].qty+newP.qty,costPrice:newP.unitCost);
+    final idx=purchases.indexWhere((x)=>x.id==oldP.id);
+    if(idx>=0)purchases[idx]=newP;
+    await save();
+  }
+
+  Future<void> deletePurchase(PurchaseRecord p) async {
+    final i=stock.indexWhere((x)=>x.id==p.itemId);
+    if(i>=0)stock[i]=stock[i].copyWith(qty:stock[i].qty-p.qty);
+    purchases.removeWhere((x)=>x.id==p.id);
+    await save();
+  }
+
   double paidForSale(String saleId)=>debtPayments.where((x)=>x.saleId==saleId).fold(0,(a,b)=>a+b.amount);
   double saleDebt(PosSale s)=>(s.debt-paidForSale(s.id)).clamp(0.0,double.infinity).toDouble();
   double get totalReceivables=>sales.fold(0,(a,s)=>a+saleDebt(s));
@@ -250,16 +291,31 @@ class _Pos extends StatelessWidget{
     body:store.sales.isEmpty?Center(child:Text(t('Hakuna mauzo ya POS bado.','No POS sales yet.'))):ListView.builder(padding:const EdgeInsets.all(12),itemCount:store.sales.length,itemBuilder:(c,i){final s=store.sales[i];return Card(child:ListTile(
       leading:const CircleAvatar(child:Icon(Icons.receipt)),title:Text('${s.receiptNo} • ${s.itemName}',style:const TextStyle(fontWeight:FontWeight.w900)),
       subtitle:Text('${DateFormat('dd MMM yyyy HH:mm').format(s.date)} • ${s.qty} × TZS ${NumberFormat('#,##0').format(s.unitPrice)}\n${s.customer.isEmpty?t('Walk-in','Walk-in'):s.customer} • ${s.payment}'),
-      trailing:Column(mainAxisAlignment:MainAxisAlignment.center,crossAxisAlignment:CrossAxisAlignment.end,children:[Text('TZS ${NumberFormat('#,##0').format(s.total)}',style:const TextStyle(fontWeight:FontWeight.w900)),if(store.saleDebt(s)>0)Text('${t('Debt','Debt')} ${NumberFormat('#,##0').format(store.saleDebt(s))}',style:const TextStyle(color:Colors.red,fontSize:11))]),
+      trailing:PopupMenuButton<String>(
+        onSelected:(v)async{
+          if(v=='edit'){
+            final e=await showDialog<PosSale>(context:context,builder:(_)=>_SaleDialog(stock:store.stock,lang:lang,saleNo:store.sales.length+1,initial:s));
+            if(e!=null){
+              try{await store.updateSale(s,e);await onChanged();}
+              catch(err){if(context.mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('${t('Imeshindikana','Failed')}: $err')));}
+            }
+          }
+          if(v=='delete'){await store.deleteSale(s);await onChanged();}
+        },
+        itemBuilder:(_)=>[
+          PopupMenuItem(value:'edit',child:ListTile(leading:const Icon(Icons.edit_outlined),title:Text(t('Hariri','Edit')))),
+          PopupMenuItem(value:'delete',child:ListTile(leading:const Icon(Icons.delete_outline),title:Text(t('Futa','Delete')))),
+        ],
+      ),
     ));})
   );
 }
-class _SaleDialog extends StatefulWidget{final List<StockItem> stock;final String lang;final int saleNo;const _SaleDialog({required this.stock,required this.lang,required this.saleNo});@override State<_SaleDialog> createState()=>_SaleDialogState();}
+class _SaleDialog extends StatefulWidget{final List<StockItem> stock;final String lang;final int saleNo;final PosSale? initial;const _SaleDialog({required this.stock,required this.lang,required this.saleNo,this.initial});@override State<_SaleDialog> createState()=>_SaleDialogState();}
 class _SaleDialogState extends State<_SaleDialog>{
   late String itemId;late TextEditingController qty,price,paid,customer,note;String payment='Cash';
   StockItem get item=>widget.stock.firstWhere((x)=>x.id==itemId);
   String t(String sw,String en)=>widget.lang=='en'?en:sw;
-  @override void initState(){super.initState();itemId=widget.stock.first.id;qty=TextEditingController(text:'1');price=TextEditingController(text:'${widget.stock.first.salePrice}');paid=TextEditingController();customer=TextEditingController();note=TextEditingController();}
+  @override void initState(){super.initState();final old=widget.initial;itemId=old?.itemId??widget.stock.first.id;qty=TextEditingController(text:old==null?'1':'${old.qty}');final base=widget.stock.firstWhere((x)=>x.id==itemId,orElse:()=>widget.stock.first);price=TextEditingController(text:old==null?'${base.salePrice}':'${old.unitPrice}');paid=TextEditingController(text:old==null?'':'${old.paid}');customer=TextEditingController(text:old?.customer??'');note=TextEditingController(text:old?.note??'');payment=old?.payment??'Cash';}
   @override Widget build(BuildContext context)=>AlertDialog(title:Text(t('Poultry POS Sale','Poultry POS Sale')),content:SingleChildScrollView(child:Column(mainAxisSize:MainAxisSize.min,children:[
     DropdownButtonFormField(value:itemId,items:widget.stock.where((x)=>x.qty>0).map((x)=>DropdownMenuItem(value:x.id,child:Text('${x.name} (${x.qty} ${x.unit})'))).toList(),onChanged:(v)=>setState((){itemId=v!;price.text='${item.salePrice}';}),decoration:InputDecoration(labelText:t('Bidhaa','Item'))),
     TextField(controller:qty,keyboardType:TextInputType.number,decoration:InputDecoration(labelText:t('Quantity','Quantity'))),
@@ -270,8 +326,8 @@ class _SaleDialogState extends State<_SaleDialog>{
     TextField(controller:note,decoration:InputDecoration(labelText:t('Maelezo','Notes'))),
   ])),actions:[TextButton(onPressed:()=>Navigator.pop(context),child:Text(t('Ghairi','Cancel'))),FilledButton(onPressed:(){
     final q=double.tryParse(qty.text)??0,p=double.tryParse(price.text.replaceAll(',',''))??0,total=q*p;double pd=double.tryParse(paid.text.replaceAll(',',''))??(payment=='Credit'?0:total);if(q<=0||p<0||q>item.qty)return;pd=pd.clamp(0.0,total).toDouble();
-    final no='LPS-${DateFormat('yyyyMMdd').format(DateTime.now())}-${widget.saleNo.toString().padLeft(4,'0')}';
-    Navigator.pop(context,PosSale(id:DateTime.now().microsecondsSinceEpoch.toString(),receiptNo:no,itemId:item.id,itemName:item.name,qty:q,unitPrice:p,costPrice:item.costPrice,paid:pd,date:DateTime.now(),customer:customer.text.trim(),payment:payment,note:note.text.trim()));
+    final no=widget.initial?.receiptNo??'LPS-${DateFormat('yyyyMMdd').format(DateTime.now())}-${widget.saleNo.toString().padLeft(4,'0')}';
+    Navigator.pop(context,PosSale(id:widget.initial?.id??DateTime.now().microsecondsSinceEpoch.toString(),receiptNo:no,itemId:item.id,itemName:item.name,qty:q,unitPrice:p,costPrice:item.costPrice,paid:pd,date:widget.initial?.date??DateTime.now(),customer:customer.text.trim(),payment:payment,note:note.text.trim()));
   },child:Text(t('Complete Sale','Complete Sale')))]);
 }
 
@@ -280,14 +336,24 @@ class _Purchases extends StatelessWidget{
  String t(String sw,String en)=>lang=='en'?en:sw;
  @override Widget build(BuildContext context)=>Scaffold(
   floatingActionButton:FloatingActionButton.extended(onPressed:store.stock.isEmpty?null:()async{final x=await showDialog<PurchaseRecord>(context:context,builder:(_)=>_PurchaseDialog(stock:store.stock,lang:lang));if(x!=null){final i=store.stock.indexWhere((s)=>s.id==x.itemId);final old=store.stock[i];store.stock[i]=old.copyWith(qty:old.qty+x.qty,costPrice:x.unitCost);store.purchases.insert(0,x);await onChanged();}},icon:const Icon(Icons.add_business),label:Text(t('Purchase','Purchase'))),
-  body:store.purchases.isEmpty?Center(child:Text(t('Rekodi ununuzi; quantity itaongezwa kwenye stock.','Record purchases; quantity will be added to stock.'))):ListView(padding:const EdgeInsets.all(12),children:store.purchases.map((x)=>Card(child:ListTile(leading:const Icon(Icons.local_shipping),title:Text(x.itemName,style:const TextStyle(fontWeight:FontWeight.w900)),subtitle:Text('${DateFormat('dd MMM yyyy').format(x.date)} • ${x.qty} × TZS ${NumberFormat('#,##0').format(x.unitCost)}${x.supplier.isEmpty?'':' • ${x.supplier}'}'),trailing:Text('TZS ${NumberFormat('#,##0').format(x.total)}',style:const TextStyle(fontWeight:FontWeight.w900))))).toList())
+  body:store.purchases.isEmpty?Center(child:Text(t('Rekodi ununuzi; quantity itaongezwa kwenye stock.','Record purchases; quantity will be added to stock.'))):ListView(padding:const EdgeInsets.all(12),children:store.purchases.map((x)=>Card(child:ListTile(leading:const Icon(Icons.local_shipping),title:Text(x.itemName,style:const TextStyle(fontWeight:FontWeight.w900)),subtitle:Text('${DateFormat('dd MMM yyyy').format(x.date)} • ${x.qty} × TZS ${NumberFormat('#,##0').format(x.unitCost)}${x.supplier.isEmpty?'':' • ${x.supplier}'}'),
+ trailing:PopupMenuButton<String>(
+  onSelected:(v)async{
+    if(v=='edit'){final e=await showDialog<PurchaseRecord>(context:context,builder:(_)=>_PurchaseDialog(stock:store.stock,lang:lang,initial:x));if(e!=null){await store.updatePurchase(x,e);await onChanged();}}
+    if(v=='delete'){await store.deletePurchase(x);await onChanged();}
+  },
+  itemBuilder:(_)=>[
+    PopupMenuItem(value:'edit',child:ListTile(leading:const Icon(Icons.edit_outlined),title:Text(t('Hariri','Edit')))),
+    PopupMenuItem(value:'delete',child:ListTile(leading:const Icon(Icons.delete_outline),title:Text(t('Futa','Delete')))),
+  ],
+ )))).toList())
  );
 }
-class _PurchaseDialog extends StatefulWidget{final List<StockItem> stock;final String lang;const _PurchaseDialog({required this.stock,required this.lang});@override State<_PurchaseDialog> createState()=>_PurchaseDialogState();}
+class _PurchaseDialog extends StatefulWidget{final List<StockItem> stock;final String lang;final PurchaseRecord? initial;const _PurchaseDialog({required this.stock,required this.lang,this.initial});@override State<_PurchaseDialog> createState()=>_PurchaseDialogState();}
 class _PurchaseDialogState extends State<_PurchaseDialog>{
  late String itemId;final qty=TextEditingController(),cost=TextEditingController(),paid=TextEditingController(),supplier=TextEditingController(),note=TextEditingController();String payment='Cash';
  StockItem get item=>widget.stock.firstWhere((x)=>x.id==itemId);String t(String sw,String en)=>widget.lang=='en'?en:sw;
- @override void initState(){super.initState();itemId=widget.stock.first.id;cost.text='${widget.stock.first.costPrice}';}
+ @override void initState(){super.initState();final old=widget.initial;itemId=old?.itemId??widget.stock.first.id;qty.text=old==null?'':'${old.qty}';cost.text=old==null?'${widget.stock.first.costPrice}':'${old.unitCost}';paid.text=old==null?'':'${old.paid}';supplier.text=old?.supplier??'';note.text=old?.note??'';payment=old?.payment??'Cash';}
  @override Widget build(BuildContext context)=>AlertDialog(title:Text(t('Stock Purchase','Stock Purchase')),content:SingleChildScrollView(child:Column(mainAxisSize:MainAxisSize.min,children:[
   DropdownButtonFormField(value:itemId,items:widget.stock.map((x)=>DropdownMenuItem(value:x.id,child:Text(x.name))).toList(),onChanged:(v)=>setState((){itemId=v!;cost.text='${item.costPrice}';}),decoration:InputDecoration(labelText:t('Bidhaa','Item'))),
   TextField(controller:qty,keyboardType:TextInputType.number,decoration:InputDecoration(labelText:t('Quantity','Quantity'))),
@@ -296,7 +362,7 @@ class _PurchaseDialogState extends State<_PurchaseDialog>{
   DropdownButtonFormField(value:payment,items:['Cash','Mobile Money','Bank','Credit'].map((e)=>DropdownMenuItem(value:e,child:Text(e))).toList(),onChanged:(v)=>setState(()=>payment=v!),decoration:InputDecoration(labelText:t('Payment','Payment'))),
   TextField(controller:paid,keyboardType:TextInputType.number,decoration:InputDecoration(labelText:t('Amount paid','Amount paid'),prefixText:'TZS ')),
   TextField(controller:note,decoration:InputDecoration(labelText:t('Maelezo','Notes'))),
- ])),actions:[TextButton(onPressed:()=>Navigator.pop(context),child:Text(t('Ghairi','Cancel'))),FilledButton(onPressed:(){final q=double.tryParse(qty.text)??0,c=double.tryParse(cost.text)??0,total=q*c,pd=(double.tryParse(paid.text)??(payment=='Credit'?0.0:total)).clamp(0.0,total).toDouble();if(q<=0||c<0)return;Navigator.pop(context,PurchaseRecord(id:DateTime.now().microsecondsSinceEpoch.toString(),itemId:item.id,itemName:item.name,qty:q,unitCost:c,paid:pd,date:DateTime.now(),supplier:supplier.text.trim(),payment:payment,note:note.text.trim()));},child:Text(t('Receive Stock','Receive Stock')))]);
+ ])),actions:[TextButton(onPressed:()=>Navigator.pop(context),child:Text(t('Ghairi','Cancel'))),FilledButton(onPressed:(){final q=double.tryParse(qty.text)??0,c=double.tryParse(cost.text)??0,total=q*c,pd=(double.tryParse(paid.text)??(payment=='Credit'?0.0:total)).clamp(0.0,total).toDouble();if(q<=0||c<0)return;Navigator.pop(context,PurchaseRecord(id:widget.initial?.id??DateTime.now().microsecondsSinceEpoch.toString(),itemId:item.id,itemName:item.name,qty:q,unitCost:c,paid:pd,date:widget.initial?.date??DateTime.now(),supplier:supplier.text.trim(),payment:payment,note:note.text.trim()));},child:Text(t('Receive Stock','Receive Stock')))]);
 }
 
 class _Debts extends StatelessWidget{
@@ -330,7 +396,25 @@ class _ClosingState extends State<_Closing>{
   TextField(controller:note,decoration:InputDecoration(labelText:t('Maelezo','Notes'))),
   const SizedBox(height:10),FilledButton.icon(onPressed:()async{final c=double.tryParse(counted.text.replaceAll(',',''));if(c==null)return;widget.store.closings.insert(0,CashClosing(id:DateTime.now().microsecondsSinceEpoch.toString(),date:DateTime.now(),expectedCash:expected,countedCash:c,note:note.text.trim()));await widget.onChanged();counted.clear();note.clear();},icon:const Icon(Icons.lock_clock),label:Text(t('Close Day','Close Day'))),
   const SizedBox(height:14),Text(t('Closing History','Closing History'),style:const TextStyle(fontWeight:FontWeight.w900,fontSize:18)),
-  ...widget.store.closings.map((x)=>Card(child:ListTile(title:Text(DateFormat('dd MMM yyyy HH:mm').format(x.date)),subtitle:Text('Expected TZS ${NumberFormat('#,##0').format(x.expectedCash)} • Counted TZS ${NumberFormat('#,##0').format(x.countedCash)}'),trailing:Text('${x.variance>=0?'+':''}${NumberFormat('#,##0').format(x.variance)}',style:TextStyle(fontWeight:FontWeight.w900,color:x.variance==0?Colors.green:Colors.red))))),
+  ...widget.store.closings.map((x)=>Card(child:ListTile(
+   title:Text(DateFormat('dd MMM yyyy HH:mm').format(x.date)),
+   subtitle:Text('Expected TZS ${NumberFormat('#,##0').format(x.expectedCash)} • Counted TZS ${NumberFormat('#,##0').format(x.countedCash)}\nVariance ${x.variance>=0?'+':''}${NumberFormat('#,##0').format(x.variance)}'),
+   trailing:PopupMenuButton<String>(
+    onSelected:(v)async{
+      final idx=widget.store.closings.indexWhere((e)=>e.id==x.id);if(idx<0)return;
+      if(v=='delete'){widget.store.closings.removeAt(idx);await widget.onChanged();}
+      if(v=='edit'){
+        counted.text='${x.countedCash}';note.text=x.note;
+        widget.store.closings.removeAt(idx);
+        await widget.onChanged();
+      }
+    },
+    itemBuilder:(_)=>[
+      PopupMenuItem(value:'edit',child:ListTile(leading:const Icon(Icons.edit_outlined),title:Text(t('Hariri','Edit')))),
+      PopupMenuItem(value:'delete',child:ListTile(leading:const Icon(Icons.delete_outline),title:Text(t('Futa','Delete')))),
+    ],
+   ),
+ ))),
  ]);}
  Widget _box(String l,double v)=>Card(child:Padding(padding:const EdgeInsets.all(18),child:Column(children:[Text(l,style:const TextStyle(fontWeight:FontWeight.w800)),Text('TZS ${NumberFormat('#,##0').format(v)}',style:const TextStyle(fontSize:26,fontWeight:FontWeight.w900))])));
 }

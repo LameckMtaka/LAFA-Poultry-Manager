@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "updated_at": "2026-08-20T00:00:00+03:00",
+  "items": [
+    {
+      "id": "welcome-v55",
+      "type": "Announcement",
+      "titleSw": "Karibu LAFA Poultry Cloud Updates",
+      "titleEn": "Welcome to LAFA Poultry Cloud Updates",
+      "bodySw": "Mfumo huu unaruhusu maudhui mapya kusasishwa kutoka server bila kusakinisha APK mpya.",
+      "bodyEn": "This system allows new content to be synchronized from the server without installing a new APK.",
+      "tags": "cloud,update,announcement",
+      "published": true,
+      "updatedAt": "2026-08-20T00:00:00+03:00"
+    }
+  ]
+}

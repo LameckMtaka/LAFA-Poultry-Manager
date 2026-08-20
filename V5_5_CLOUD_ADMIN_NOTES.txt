@@ -1,0 +1,54 @@
+LAFA Poultry Solution Pro v5.5 — CLOUD ADMIN UPDATE SYSTEM
+
+MOBILE APP
+- Cloud Sync menu
+- Check & Sync Now
+- Auto Sync toggle
+- Content version
+- Last sync time
+- Offline-first behavior
+- Remote content saved locally
+- App checks lightweight version endpoint before downloading content
+
+SERVER
+Included folder:
+server/lafa-poultry-api/
+
+Upload to:
+public_html/lafa-poultry-api/
+
+Endpoints:
+- version.php
+- content.php
+- admin-update.php
+- admin-panel.php
+
+SERVER ADMIN
+admin-panel.php is a basic web content publisher.
+BEFORE UPLOAD:
+- Change ADMIN_PASSWORD
+- Change API_KEY
+- Use the same API key in admin-update.php
+- Use HTTPS
+- Make data folder writable
+
+IMPORTANT ARCHITECTURE
+v5.5 cloud updates are for CONTENT, not executable code.
+You can update:
+- Diseases
+- Treatments
+- Feed content
+- FAQs
+- General guides
+- Vaccination notes
+- Announcements
+
+A new APK/AAB is still required for:
+- New Flutter screens/features
+- New plugins
+- Android permissions
+- Database/code changes
+- App icon/native configuration
+
+Default cloud URL:
+https://lafasoftware.co.tz/lafa-poultry-api

@@ -80,13 +80,23 @@ class _Sales extends StatelessWidget{
   body:store.sales.isEmpty?Center(child:Text(t('Bado hakuna mauzo. Bonyeza Rekodi Mauzo.','No sales yet. Tap Record Sale.'))):ListView.builder(padding:const EdgeInsets.all(12),itemCount:store.sales.length,itemBuilder:(c,i){final s=store.sales[i];return Card(child:ListTile(
    leading:const CircleAvatar(child:Icon(Icons.receipt_long)),title:Text(s.item,style:const TextStyle(fontWeight:FontWeight.w800)),
    subtitle:Text('${DateFormat('dd MMM yyyy').format(s.date)} • ${s.qty} × TZS ${NumberFormat('#,##0').format(s.unitPrice)}${s.customer.isEmpty?'':' • ${s.customer}'}\n${s.payment}'),
-   trailing:Column(mainAxisAlignment:MainAxisAlignment.center,crossAxisAlignment:CrossAxisAlignment.end,children:[Text('TZS ${NumberFormat('#,##0').format(s.total)}',style:const TextStyle(fontWeight:FontWeight.w900)),IconButton(icon:const Icon(Icons.delete_outline,size:20),onPressed:()async{store.sales.removeAt(i);await onChanged();})]),
+   trailing:PopupMenuButton<String>(
+    onSelected:(v)async{
+      if(v=='edit'){final e=await showDialog<SaleRecord>(context:context,builder:(_)=>_SaleDialog(lang:lang,initial:s));if(e!=null){store.sales[i]=e;await onChanged();}}
+      if(v=='delete'){store.sales.removeAt(i);await onChanged();}
+    },
+    itemBuilder:(_)=>[
+      PopupMenuItem(value:'edit',child:ListTile(leading:const Icon(Icons.edit_outlined),title:Text(t('Hariri','Edit')))),
+      PopupMenuItem(value:'delete',child:ListTile(leading:const Icon(Icons.delete_outline),title:Text(t('Futa','Delete')))),
+    ],
+   ),
   ));})
  );
 }
-class _SaleDialog extends StatefulWidget{final String lang;const _SaleDialog({required this.lang});@override State<_SaleDialog> createState()=>_SaleDialogState();}
+class _SaleDialog extends StatefulWidget{final String lang;final SaleRecord? initial;const _SaleDialog({required this.lang,this.initial});@override State<_SaleDialog> createState()=>_SaleDialogState();}
 class _SaleDialogState extends State<_SaleDialog>{
- final item=TextEditingController(),qty=TextEditingController(text:'1'),price=TextEditingController(),customer=TextEditingController(),note=TextEditingController();String payment='Cash';
+ late final TextEditingController item,qty,price,customer,note;late String payment;
+ @override void initState(){super.initState();final x=widget.initial;item=TextEditingController(text:x?.item??'');qty=TextEditingController(text:x==null?'1':'${x.qty}');price=TextEditingController(text:x==null?'':'${x.unitPrice}');customer=TextEditingController(text:x?.customer??'');note=TextEditingController(text:x?.note??'');payment=x?.payment??'Cash';}
  String t(String sw,String en)=>widget.lang=='en'?en:sw;
  @override Widget build(BuildContext context)=>AlertDialog(title:Text(t('Rekodi Mauzo','Record Sale')),content:SingleChildScrollView(child:Column(mainAxisSize:MainAxisSize.min,children:[
   TextField(controller:item,decoration:InputDecoration(labelText:t('Bidhaa: Kuku, Mayai, Vifaranga...','Item: Chicken, Eggs, Chicks...'))),
@@ -95,7 +105,7 @@ class _SaleDialogState extends State<_SaleDialog>{
   TextField(controller:customer,decoration:InputDecoration(labelText:t('Mteja (optional)','Customer (optional)'))),
   DropdownButtonFormField(value:payment,items:['Cash','Mobile Money','Bank','Credit'].map((e)=>DropdownMenuItem(value:e,child:Text(e))).toList(),onChanged:(v)=>setState(()=>payment=v!),decoration:InputDecoration(labelText:t('Malipo','Payment'))),
   TextField(controller:note,decoration:InputDecoration(labelText:t('Maelezo','Notes'))),
- ])),actions:[TextButton(onPressed:()=>Navigator.pop(context),child:Text(t('Ghairi','Cancel'))),FilledButton(onPressed:(){final q=double.tryParse(qty.text)??0,p=double.tryParse(price.text.replaceAll(',',''))??0;if(item.text.trim().isEmpty||q<=0||p<0)return;Navigator.pop(context,SaleRecord(id:DateTime.now().microsecondsSinceEpoch.toString(),item:item.text.trim(),qty:q,unitPrice:p,date:DateTime.now(),customer:customer.text.trim(),payment:payment,note:note.text.trim()));},child:Text(t('Hifadhi Mauzo','Save Sale')))]);
+ ])),actions:[TextButton(onPressed:()=>Navigator.pop(context),child:Text(t('Ghairi','Cancel'))),FilledButton(onPressed:(){final q=double.tryParse(qty.text)??0,p=double.tryParse(price.text.replaceAll(',',''))??0;if(item.text.trim().isEmpty||q<=0||p<0)return;Navigator.pop(context,SaleRecord(id:widget.initial?.id??DateTime.now().microsecondsSinceEpoch.toString(),item:item.text.trim(),qty:q,unitPrice:p,date:widget.initial?.date??DateTime.now(),customer:customer.text.trim(),payment:payment,note:note.text.trim()));},child:Text(t('Hifadhi Mauzo','Save Sale')))]);
 }
 
 class _Transactions extends StatelessWidget{
@@ -105,21 +115,32 @@ class _Transactions extends StatelessWidget{
  @override Widget build(BuildContext context){final list=store.txns.where((x)=>x.type==type).toList();return Scaffold(
   floatingActionButton:FloatingActionButton.extended(onPressed:()async{final x=await showDialog<FarmTxn>(context:context,builder:(_)=>_TxnDialog(type:type,lang:lang));if(x!=null){store.txns.insert(0,x);await onChanged();}},icon:const Icon(Icons.add),label:Text(type=='income'?t('Ongeza Mapato','Add Income'):t('Ongeza Matumizi','Add Expense'))),
   body:list.isEmpty?Center(child:Text(type=='income'?t('Bado hakuna mapato mengine.','No other income yet.'):t('Bado hakuna matumizi.','No expenses yet.'))):ListView(padding:const EdgeInsets.all(12),children:list.map((x)=>Card(child:ListTile(
-   leading:CircleAvatar(child:Icon(type=='income'?Icons.south_west:Icons.north_east)),title:Text(x.category,style:const TextStyle(fontWeight:FontWeight.w800)),subtitle:Text('${DateFormat('dd MMM yyyy').format(x.date)} • ${x.payment}${x.note.isEmpty?'':'\n${x.note}'}'),trailing:Text('TZS ${NumberFormat('#,##0').format(x.amount)}',style:const TextStyle(fontWeight:FontWeight.w900))
+   leading:CircleAvatar(child:Icon(type=='income'?Icons.south_west:Icons.north_east)),title:Text(x.category,style:const TextStyle(fontWeight:FontWeight.w800)),subtitle:Text('${DateFormat('dd MMM yyyy').format(x.date)} • ${x.payment}${x.note.isEmpty?'':'\n${x.note}'}'),
+   trailing:PopupMenuButton<String>(
+    onSelected:(v)async{
+      final idx=store.txns.indexWhere((e)=>e.id==x.id);if(idx<0)return;
+      if(v=='edit'){final e=await showDialog<FarmTxn>(context:context,builder:(_)=>_TxnDialog(type:type,lang:lang,initial:x));if(e!=null){store.txns[idx]=e;await onChanged();}}
+      if(v=='delete'){store.txns.removeAt(idx);await onChanged();}
+    },
+    itemBuilder:(_)=>[
+      PopupMenuItem(value:'edit',child:ListTile(leading:const Icon(Icons.edit_outlined),title:Text(t('Hariri','Edit')))),
+      PopupMenuItem(value:'delete',child:ListTile(leading:const Icon(Icons.delete_outline),title:Text(t('Futa','Delete')))),
+    ],
+   )
   ))).toList())
  );}
 }
-class _TxnDialog extends StatefulWidget{final String type,lang;const _TxnDialog({required this.type,required this.lang});@override State<_TxnDialog> createState()=>_TxnDialogState();}
+class _TxnDialog extends StatefulWidget{final String type,lang;final FarmTxn? initial;const _TxnDialog({required this.type,required this.lang,this.initial});@override State<_TxnDialog> createState()=>_TxnDialogState();}
 class _TxnDialogState extends State<_TxnDialog>{
- final amount=TextEditingController(),note=TextEditingController();String category='',payment='Cash';
+ late final TextEditingController amount,note;late String category,payment;
  String t(String sw,String en)=>widget.lang=='en'?en:sw;
- @override void initState(){super.initState();category=widget.type=='income'?'Other income':'Feed';}
+ @override void initState(){super.initState();final x=widget.initial;amount=TextEditingController(text:x==null?'':'${x.amount}');note=TextEditingController(text:x?.note??'');category=x?.category??(widget.type=='income'?'Other income':'Feed');payment=x?.payment??'Cash';}
  @override Widget build(BuildContext context){final cats=widget.type=='income'?['Other income','Egg income','Manure','Culled birds','Services']:['Feed','Chicks','Medicine/Vaccine','Labour','Water/Electricity','Transport','Housing/Equipment','Litter','Other'];return AlertDialog(title:Text(widget.type=='income'?t('Ongeza Mapato','Add Income'):t('Ongeza Matumizi','Add Expense')),content:Column(mainAxisSize:MainAxisSize.min,children:[
   DropdownButtonFormField(value:category,items:cats.map((e)=>DropdownMenuItem(value:e,child:Text(e))).toList(),onChanged:(v)=>setState(()=>category=v!),decoration:InputDecoration(labelText:t('Aina','Category'))),
   TextField(controller:amount,keyboardType:TextInputType.number,decoration:const InputDecoration(labelText:'Amount',prefixText:'TZS ')),
   DropdownButtonFormField(value:payment,items:['Cash','Mobile Money','Bank','Credit'].map((e)=>DropdownMenuItem(value:e,child:Text(e))).toList(),onChanged:(v)=>setState(()=>payment=v!),decoration:InputDecoration(labelText:t('Njia','Method'))),
   TextField(controller:note,decoration:InputDecoration(labelText:t('Maelezo','Notes')))
- ]),actions:[TextButton(onPressed:()=>Navigator.pop(context),child:Text(t('Ghairi','Cancel'))),FilledButton(onPressed:(){final a=double.tryParse(amount.text.replaceAll(',',''))??0;if(a<=0)return;Navigator.pop(context,FarmTxn(id:DateTime.now().microsecondsSinceEpoch.toString(),type:widget.type,category:category,amount:a,date:DateTime.now(),note:note.text.trim(),payment:payment));},child:Text(t('Hifadhi','Save')))]);}
+ ]),actions:[TextButton(onPressed:()=>Navigator.pop(context),child:Text(t('Ghairi','Cancel'))),FilledButton(onPressed:(){final a=double.tryParse(amount.text.replaceAll(',',''))??0;if(a<=0)return;Navigator.pop(context,FarmTxn(id:widget.initial?.id??DateTime.now().microsecondsSinceEpoch.toString(),type:widget.type,category:category,amount:a,date:widget.initial?.date??DateTime.now(),note:note.text.trim(),payment:payment));},child:Text(t('Hifadhi','Save')))]);}
 }
 class _Report extends StatelessWidget{
  final BusinessStore store;final String lang;const _Report({required this.store,required this.lang});

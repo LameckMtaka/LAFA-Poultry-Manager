@@ -49,3 +49,15 @@ Uploaded poultry guides contain different vaccination schedules. v4.1 keeps thes
 ## v4.2.3 MOBILE INSTALL OPTIMIZED
 GitHub Actions creates ARM64, ARM32, x86_64 and Universal APKs.
 Install only one. ARM64 is the recommended first choice for most modern Android devices.
+
+
+## v5.3 Interactive Professional Edition
+See `V5_3_INTERACTIVE_PRO_NOTES.txt` for edit/delete, contact, copyright and UI improvements.
+
+
+## v5.4 Admin & Content Manager
+Admin PIN, editable CMS content, publish/unpublish, JSON content packs, Knowledge Updates, and official LAFA phone/WhatsApp defaults.
+
+
+## v5.5 Cloud Admin Update System
+Cloud content sync, server-side PHP API, versioning, offline-first updates, auto-sync, and basic web admin publisher are included.

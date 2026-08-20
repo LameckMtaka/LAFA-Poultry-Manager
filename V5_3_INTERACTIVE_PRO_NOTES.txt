@@ -1,0 +1,33 @@
+LAFA Poultry Solution Pro v5.3 — INTERACTIVE PROFESSIONAL EDITION
+
+INTERACTIVITY
+- Egg batches: Edit / Delete + automatic alarm rescheduling
+- Chick batches: Edit / Delete + automatic vaccine reminder rescheduling
+- Incubators: Edit / Delete
+- Temperature & humidity records: Edit / Delete
+- Camera candling history: Delete records
+- Business Sales: Edit / Delete
+- Business Income & Expenses: Edit / Delete
+- POS stock: existing Edit / Delete retained
+- POS Sales: Edit / Delete with automatic stock reversal/recalculation
+- Purchases: Edit / Delete with stock adjustment
+- Cash closing history: Edit / Delete
+
+BRANDING / SUPPORT
+- LAFA Software Company LTD
+- Website: https://lafasoftware.co.tz
+- Email: info@lafasoftware.co.tz
+- Copyright: © 2026 LAFA Software Company LTD. All rights reserved.
+- About & Support page
+- Phone 1, Phone 2 and WhatsApp are editable inside the app and saved permanently.
+  Exact phone numbers were not hard-coded because no verified phone numbers were available in the current project files.
+
+UI
+- Softer modern Material 3 forms
+- Rounded professional cards
+- Improved dashboard footer / official ownership display
+- Existing LAFA Poultry Solution branding and logo retained
+
+IMPORTANT
+For transaction integrity, POS Sale edits/deletes adjust inventory automatically.
+Purchase edits/deletes also adjust inventory quantities.

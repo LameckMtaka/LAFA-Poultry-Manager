@@ -17,6 +17,9 @@ import 'knowledge.dart';
 import 'pro_tools.dart';
 import 'business_suite.dart';
 import 'pos_inventory.dart';
+import 'company_profile.dart';
+import 'admin_cms.dart';
+import 'cloud_sync.dart';
 import 'vaccine_profiles.dart';
 
 void main() async {
@@ -60,8 +63,24 @@ class _PoultryAppState extends State<PoultryApp> {
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF176B43)),
         useMaterial3: true,
         scaffoldBackgroundColor: const Color(0xFFF4F7F5),
-        cardTheme: const CardThemeData(elevation: 0, margin: EdgeInsets.zero),
-        inputDecorationTheme: const InputDecorationTheme(border: OutlineInputBorder()),
+        cardTheme: CardThemeData(
+          elevation: 0,
+          margin: EdgeInsets.zero,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        ),
+        inputDecorationTheme: InputDecorationTheme(
+          filled: true,
+          fillColor: Colors.white,
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: const BorderSide(color: Color(0xFFDCE8E0)),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: const BorderSide(color: Color(0xFF176B43), width: 1.6),
+          ),
+        ),
       ),
       home: HomePage(languageCode: languageCode, onLanguageChanged: _setLanguage),
     );
@@ -74,6 +93,9 @@ class Incubator {
   final int capacity;
   final String notes;
   Incubator({required this.id, required this.name, required this.capacity, this.notes = ''});
+  Incubator copyWith({String? name,int? capacity,String? notes}) => Incubator(
+    id:id,name:name??this.name,capacity:capacity??this.capacity,notes:notes??this.notes,
+  );
   Map<String, dynamic> toJson() => {'id': id, 'name': name, 'capacity': capacity, 'notes': notes};
   factory Incubator.fromJson(Map<String, dynamic> j) => Incubator(id: j['id'], name: j['name'], capacity: j['capacity'] ?? 0, notes: j['notes'] ?? '');
 }
@@ -103,12 +125,15 @@ class PoultryBatch {
     this.hatched = 0,
   });
 
-  PoultryBatch copyWith({int? fertile, int? infertile, int? suspect, int? deadEmbryo, int? hatched}) => PoultryBatch(
+  PoultryBatch copyWith({
+    String? name,int? eggs,DateTime? setDate,String? incubatorId,
+    int? fertile,int? infertile,int? suspect,int? deadEmbryo,int? hatched,
+  }) => PoultryBatch(
         id: id,
-        name: name,
-        eggs: eggs,
-        setDate: setDate,
-        incubatorId: incubatorId,
+        name: name ?? this.name,
+        eggs: eggs ?? this.eggs,
+        setDate: setDate ?? this.setDate,
+        incubatorId: incubatorId ?? this.incubatorId,
         fertile: fertile ?? this.fertile,
         infertile: infertile ?? this.infertile,
         suspect: suspect ?? this.suspect,
@@ -160,11 +185,13 @@ class ChickBatch {
     this.vaccineProfileId = defaultVaccineProfileId,
   });
 
-  ChickBatch copyWith({int? mortality, String? vaccineProfileId}) => ChickBatch(
+  ChickBatch copyWith({
+    String? name,int? chicks,int? mortality,DateTime? hatchDate,String? vaccineProfileId,
+  }) => ChickBatch(
         id: id,
-        name: name,
-        chicks: chicks,
-        hatchDate: hatchDate,
+        name: name ?? this.name,
+        chicks: chicks ?? this.chicks,
+        hatchDate: hatchDate ?? this.hatchDate,
         mortality: mortality ?? this.mortality,
         vaccineProfileId: vaccineProfileId ?? this.vaccineProfileId,
       );
@@ -437,6 +464,18 @@ class _HomePageState extends State<HomePage> {
               if (v == 'restore') _restore();
               if (v == 'lang_sw') widget.onLanguageChanged('sw');
               if (v == 'lang_en') widget.onLanguageChanged('en');
+              if (v == 'about') Navigator.of(context).push(MaterialPageRoute(
+                builder: (_) => AboutSupportPage(languageCode: widget.languageCode),
+              ));
+              if (v == 'admin') Navigator.of(context).push(MaterialPageRoute(
+                builder: (_) => AdminGatePage(languageCode: widget.languageCode),
+              ));
+              if (v == 'updates') Navigator.of(context).push(MaterialPageRoute(
+                builder: (_) => ManagedKnowledgePage(languageCode: widget.languageCode),
+              ));
+              if (v == 'cloud') Navigator.of(context).push(MaterialPageRoute(
+                builder: (_) => CloudSyncPage(languageCode: widget.languageCode),
+              ));
             },
             itemBuilder: (_) => [
               PopupMenuItem(value: 'lang_sw', child: ListTile(leading: const Icon(Icons.language), title: Text(t('Kiswahili ✓', 'Swahili')))),
@@ -444,6 +483,10 @@ class _HomePageState extends State<HomePage> {
               PopupMenuItem(value: 'test', child: ListTile(leading: const Icon(Icons.notifications_active_outlined), title: Text(t('Jaribu alarm', 'Test alarm')))),
               const PopupMenuItem(value: 'backup', child: ListTile(leading: Icon(Icons.backup_outlined), title: Text('Backup / Share'))),
               PopupMenuItem(value: 'restore', child: ListTile(leading: const Icon(Icons.restore), title: Text(t('Rudisha backup', 'Restore backup')))),
+              PopupMenuItem(value: 'cloud', child: ListTile(leading: const Icon(Icons.cloud_sync_outlined), title: Text(t('Cloud Sync', 'Cloud Sync')))),
+              PopupMenuItem(value: 'updates', child: ListTile(leading: const Icon(Icons.library_books_outlined), title: Text(t('Knowledge Updates', 'Knowledge Updates')))),
+              PopupMenuItem(value: 'admin', child: ListTile(leading: const Icon(Icons.admin_panel_settings_outlined), title: Text(t('Admin Center', 'Admin Center')))),
+              PopupMenuItem(value: 'about', child: ListTile(leading: const Icon(Icons.info_outline), title: Text(t('Kuhusu, Mawasiliano & Copyright', 'About, Contact & Copyright')))),
             ],
           )
         ],
@@ -474,6 +517,21 @@ class _HomePageState extends State<HomePage> {
       ),
     );
   }
+}
+
+
+Future<bool> _confirmDelete(BuildContext context,String title,String message) async {
+  return await showDialog<bool>(
+    context:context,
+    builder:(_)=>AlertDialog(
+      title:Text(title),
+      content:Text(message),
+      actions:[
+        TextButton(onPressed:()=>Navigator.pop(context,false),child:const Text('Cancel')),
+        FilledButton.tonal(onPressed:()=>Navigator.pop(context,true),child:const Text('Delete')),
+      ],
+    ),
+  ) ?? false;
 }
 
 class Dashboard extends StatelessWidget {
@@ -559,6 +617,21 @@ class Dashboard extends StatelessWidget {
           )))),
       const SizedBox(height: 12),
       const _TimelineCard(),
+      const SizedBox(height: 16),
+      Card(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(children: const [
+            Text('LAFA Software Company LTD',style:TextStyle(fontWeight:FontWeight.w900)),
+            SizedBox(height:4),
+            Text('www.lafasoftware.co.tz • info@lafasoftware.co.tz',textAlign:TextAlign.center),
+            SizedBox(height:4),
+            Text('+255 767 006 454 • WhatsApp: +255 767 006 454',textAlign:TextAlign.center),
+            SizedBox(height:4),
+            Text(CompanyProfile.copyright,textAlign:TextAlign.center,style:TextStyle(fontSize:12)),
+          ]),
+        ),
+      ),
     ]);
   }
 
@@ -586,6 +659,35 @@ class EggBatches extends StatelessWidget {
           leading: const CircleAvatar(child: Icon(Icons.egg_alt)),
           title: Text(b.name, style: const TextStyle(fontWeight: FontWeight.w900)),
           subtitle: Text('${b.eggs} mayai • $incubator • Siku $day'),
+          trailing: PopupMenuButton<String>(
+            tooltip: 'Actions',
+            onSelected: (v) async {
+              if (v == 'edit') {
+                final edited = await showDialog<PoultryBatch>(
+                  context: context,
+                  builder: (_) => AddEggBatchDialog(incubators: store.incubators, initial: b),
+                );
+                if (edited != null) {
+                  store.batches[i] = edited;
+                  await onChanged();
+                  await NotificationService.instance.cancelBatch(b.id);
+                  await NotificationService.instance.scheduleIncubation(edited);
+                }
+              }
+              if (v == 'delete') {
+                final ok = await _confirmDelete(context,'Futa batch?','Batch hii na ratiba zake zitaondolewa.');
+                if (ok) {
+                  store.batches.removeAt(i);
+                  await onChanged();
+                  await NotificationService.instance.cancelBatch(b.id);
+                }
+              }
+            },
+            itemBuilder: (_) => const [
+              PopupMenuItem(value:'edit',child:ListTile(leading:Icon(Icons.edit_outlined),title:Text('Edit'))),
+              PopupMenuItem(value:'delete',child:ListTile(leading:Icon(Icons.delete_outline),title:Text('Delete'))),
+            ],
+          ),
           childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
           children: [
             _scheduleRow('Siku 8', 'Candling', b.setDate.add(const Duration(days: 8))),
@@ -653,6 +755,34 @@ class ChickBatches extends StatelessWidget {
               leading: const CircleAvatar(child: Icon(Icons.pets)),
               title: Text(c.name, style: const TextStyle(fontWeight: FontWeight.w900)),
               subtitle: Text('${c.chicks} ${t('vifaranga','chicks')} • ${t('Vifo','Deaths')} ${c.mortality} (${mortality.toStringAsFixed(1)}%)\n${t('Ratiba','Profile')}: ${languageCode == 'en' ? profile.nameEn : profile.nameSw}'),
+              trailing: PopupMenuButton<String>(
+                onSelected:(v) async {
+                  if(v=='edit'){
+                    final edited = await showDialog<ChickBatch>(
+                      context:context,
+                      builder:(_)=>AddChickBatchDialog(profiles:store.vaccineProfiles,initial:c),
+                    );
+                    if(edited!=null){
+                      store.chicks[i]=edited;
+                      await onChanged();
+                      await NotificationService.instance.cancelVaccineBatch(c.id);
+                      await NotificationService.instance.scheduleVaccines(edited,store.vaccineProfileFor(edited.vaccineProfileId));
+                    }
+                  }
+                  if(v=='delete'){
+                    final ok=await _confirmDelete(context,t('Futa batch?','Delete batch?'),t('Batch hii ya vifaranga itaondolewa.','This chick batch will be removed.'));
+                    if(ok){
+                      store.chicks.removeAt(i);
+                      await onChanged();
+                      await NotificationService.instance.cancelVaccineBatch(c.id);
+                    }
+                  }
+                },
+                itemBuilder:(_)=>[
+                  PopupMenuItem(value:'edit',child:ListTile(leading:const Icon(Icons.edit_outlined),title:Text(t('Hariri','Edit')))),
+                  PopupMenuItem(value:'delete',child:ListTile(leading:const Icon(Icons.delete_outline),title:Text(t('Futa','Delete')))),
+                ],
+              ),
               children: [
                 ...vaccineSchedule(c, profile).map((v) => ListTile(
                   contentPadding: const EdgeInsets.symmetric(horizontal: 20),
@@ -725,6 +855,26 @@ class IncubatorsPage extends StatelessWidget {
         leading: const CircleAvatar(child: Icon(Icons.device_thermostat)),
         title: Text(inc.name, style: const TextStyle(fontWeight: FontWeight.w900)),
         subtitle: Text('Capacity ${inc.capacity}${latest == null ? '' : ' • ${latest.temperature.toStringAsFixed(1)}°C • ${latest.humidity.toStringAsFixed(0)}% RH'}'),
+        trailing: PopupMenuButton<String>(
+          onSelected:(v) async {
+            if(v=='edit'){
+              final edited=await showDialog<Incubator>(context:context,builder:(_)=>AddIncubatorDialog(initial:inc));
+              if(edited!=null){store.incubators[i]=edited;await onChanged();}
+            }
+            if(v=='delete'){
+              final ok=await _confirmDelete(context,'Delete incubator?','Incubator and its temperature/humidity records will be removed.');
+              if(ok){
+                store.environment.removeWhere((e)=>e.incubatorId==inc.id);
+                store.incubators.removeAt(i);
+                await onChanged();
+              }
+            }
+          },
+          itemBuilder:(_)=>const[
+            PopupMenuItem(value:'edit',child:ListTile(leading:Icon(Icons.edit_outlined),title:Text('Edit'))),
+            PopupMenuItem(value:'delete',child:ListTile(leading:Icon(Icons.delete_outline),title:Text('Delete'))),
+          ],
+        ),
         childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
         children: [
           if (inc.notes.isNotEmpty) Align(alignment: Alignment.centerLeft, child: Text(inc.notes)),
@@ -734,7 +884,26 @@ class IncubatorsPage extends StatelessWidget {
             if (r != null) { store.environment.insert(0, r); await onChanged(); }
           }, icon: const Icon(Icons.add_chart), label: const Text('Rekodi temperature & humidity')),
           const SizedBox(height: 8),
-          ...records.take(10).map((r) => ListTile(dense: true, contentPadding: EdgeInsets.zero, title: Text('${r.temperature.toStringAsFixed(1)} °C   •   ${r.humidity.toStringAsFixed(0)}% RH', style: const TextStyle(fontWeight: FontWeight.w800)), subtitle: Text(DateFormat('dd/MM/yyyy HH:mm').format(r.time)))),
+          ...records.take(10).map((r) => ListTile(
+            dense:true,contentPadding:EdgeInsets.zero,
+            title:Text('${r.temperature.toStringAsFixed(1)} °C   •   ${r.humidity.toStringAsFixed(0)}% RH',style:const TextStyle(fontWeight:FontWeight.w800)),
+            subtitle:Text(DateFormat('dd/MM/yyyy HH:mm').format(r.time)),
+            trailing:PopupMenuButton<String>(
+              onSelected:(v) async {
+                final idx=store.environment.indexWhere((x)=>x.id==r.id);
+                if(idx<0)return;
+                if(v=='edit'){
+                  final edited=await showDialog<EnvironmentRecord>(context:context,builder:(_)=>EnvironmentDialog(incubatorId:inc.id,initial:r));
+                  if(edited!=null){store.environment[idx]=edited;await onChanged();}
+                }
+                if(v=='delete'){store.environment.removeAt(idx);await onChanged();}
+              },
+              itemBuilder:(_)=>const[
+                PopupMenuItem(value:'edit',child:Text('Edit')),
+                PopupMenuItem(value:'delete',child:Text('Delete')),
+              ],
+            ),
+          )),
         ],
       )));
     });
@@ -845,119 +1014,197 @@ class _CameraCandlingPageState extends State<CameraCandlingPage> {
       const SizedBox(height: 18),
       const Text('Historia ya Camera Candling', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
       const SizedBox(height: 8),
-      ...widget.store.candling.take(12).map((r) => Card(child: ListTile(leading: const Icon(Icons.analytics_outlined), title: Text(r.result), subtitle: Text('${DateFormat('dd/MM/yyyy HH:mm').format(r.time)} • ${(r.confidence * 100).toStringAsFixed(0)}%')))),
+      ...widget.store.candling.take(12).map((r) => Card(child: ListTile(
+        leading:const Icon(Icons.analytics_outlined),
+        title:Text(r.result),
+        subtitle:Text('${DateFormat('dd/MM/yyyy HH:mm').format(r.time)} • ${(r.confidence * 100).toStringAsFixed(0)}%'),
+        trailing:IconButton(
+          tooltip:'Delete record',
+          icon:const Icon(Icons.delete_outline),
+          onPressed:() async {
+            widget.store.candling.removeWhere((x)=>x.id==r.id);
+            await widget.onChanged();
+            if(mounted)setState((){});
+          },
+        ),
+      ))),
     ]);
   }
 }
 
 class AddEggBatchDialog extends StatefulWidget {
   final List<Incubator> incubators;
-  const AddEggBatchDialog({super.key, required this.incubators});
-  @override
-  State<AddEggBatchDialog> createState() => _AddEggBatchDialogState();
+  final PoultryBatch? initial;
+  const AddEggBatchDialog({super.key, required this.incubators, this.initial});
+  @override State<AddEggBatchDialog> createState()=>_AddEggBatchDialogState();
 }
-
-class _AddEggBatchDialogState extends State<AddEggBatchDialog> {
-  final name = TextEditingController();
-  final eggs = TextEditingController();
-  DateTime date = DateTime.now();
-  String incubatorId = '';
-  @override
-  Widget build(BuildContext context) => AlertDialog(title: const Text('Batch mpya ya mayai'), content: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, children: [
-    TextField(controller: name, decoration: const InputDecoration(labelText: 'Jina la batch')), const SizedBox(height: 10),
-    TextField(controller: eggs, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Idadi ya mayai')), const SizedBox(height: 10),
-    if (widget.incubators.isNotEmpty) DropdownButtonFormField<String>(initialValue: incubatorId.isEmpty ? null : incubatorId, decoration: const InputDecoration(labelText: 'Incubator'), items: widget.incubators.map((e) => DropdownMenuItem(value: e.id, child: Text(e.name))).toList(), onChanged: (v) => setState(() => incubatorId = v ?? '')), const SizedBox(height: 10),
-    ListTile(contentPadding: EdgeInsets.zero, title: const Text('Tarehe ya kuweka mayai'), subtitle: Text(fmt(date)), trailing: const Icon(Icons.calendar_month), onTap: () async { final d = await showDatePicker(context: context, initialDate: date, firstDate: DateTime(2020), lastDate: DateTime(2040)); if (d != null) setState(() => date = d); }),
-  ])), actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('Ghairi')), FilledButton(onPressed: () { final n = int.tryParse(eggs.text); if (name.text.trim().isEmpty || n == null || n <= 0) return; Navigator.pop(context, PoultryBatch(id: DateTime.now().microsecondsSinceEpoch.toString(), name: name.text.trim(), eggs: n, setDate: date, incubatorId: incubatorId)); }, child: const Text('Hifadhi + alarms'))]);
+class _AddEggBatchDialogState extends State<AddEggBatchDialog>{
+  late final TextEditingController name;
+  late final TextEditingController eggs;
+  late DateTime date;
+  late String incubatorId;
+  @override void initState(){
+    super.initState();
+    name=TextEditingController(text:widget.initial?.name??'');
+    eggs=TextEditingController(text:widget.initial==null?'':'${widget.initial!.eggs}');
+    date=widget.initial?.setDate??DateTime.now();
+    incubatorId=widget.initial?.incubatorId??'';
+  }
+  @override Widget build(BuildContext context)=>AlertDialog(
+    title:Text(widget.initial==null?'Batch mpya ya mayai':'Hariri batch ya mayai'),
+    content:SingleChildScrollView(child:Column(mainAxisSize:MainAxisSize.min,children:[
+      TextField(controller:name,decoration:const InputDecoration(labelText:'Jina la batch')),
+      const SizedBox(height:10),
+      TextField(controller:eggs,keyboardType:TextInputType.number,decoration:const InputDecoration(labelText:'Idadi ya mayai')),
+      const SizedBox(height:10),
+      if(widget.incubators.isNotEmpty) DropdownButtonFormField<String>(
+        initialValue:incubatorId.isEmpty?null:incubatorId,
+        decoration:const InputDecoration(labelText:'Incubator'),
+        items:widget.incubators.map((e)=>DropdownMenuItem(value:e.id,child:Text(e.name))).toList(),
+        onChanged:(v)=>setState(()=>incubatorId=v??''),
+      ),
+      const SizedBox(height:10),
+      ListTile(contentPadding:EdgeInsets.zero,title:const Text('Tarehe ya kuweka mayai'),subtitle:Text(fmt(date)),trailing:const Icon(Icons.calendar_month),onTap:()async{
+        final d=await showDatePicker(context:context,initialDate:date,firstDate:DateTime(2020),lastDate:DateTime(2040));
+        if(d!=null)setState(()=>date=d);
+      }),
+    ])),
+    actions:[
+      TextButton(onPressed:()=>Navigator.pop(context),child:const Text('Ghairi')),
+      FilledButton(onPressed:(){
+        final n=int.tryParse(eggs.text);
+        if(name.text.trim().isEmpty||n==null||n<=0)return;
+        final old=widget.initial;
+        Navigator.pop(context,PoultryBatch(
+          id:old?.id??DateTime.now().microsecondsSinceEpoch.toString(),
+          name:name.text.trim(),eggs:n,setDate:date,incubatorId:incubatorId,
+          fertile:old?.fertile??0,infertile:old?.infertile??0,suspect:old?.suspect??0,
+          deadEmbryo:old?.deadEmbryo??0,hatched:old?.hatched??0,
+        ));
+      },child:Text(widget.initial==null?'Hifadhi + alarms':'Update + reschedule')),
+    ],
+  );
 }
 
 class AddChickBatchDialog extends StatefulWidget {
   final List<VaccineProfile> profiles;
-  const AddChickBatchDialog({super.key, required this.profiles});
-  @override
-  State<AddChickBatchDialog> createState() => _AddChickBatchDialogState();
+  final ChickBatch? initial;
+  const AddChickBatchDialog({super.key, required this.profiles, this.initial});
+  @override State<AddChickBatchDialog> createState()=>_AddChickBatchDialogState();
 }
-class _AddChickBatchDialogState extends State<AddChickBatchDialog> {
-  final name = TextEditingController();
-  final count = TextEditingController();
-  DateTime date = DateTime.now();
-  String profileId = defaultVaccineProfileId;
-
-  @override
-  void initState() {
+class _AddChickBatchDialogState extends State<AddChickBatchDialog>{
+  late final TextEditingController name;
+  late final TextEditingController count;
+  late DateTime date;
+  late String profileId;
+  @override void initState(){
     super.initState();
-    if (!widget.profiles.any((p) => p.id == profileId) && widget.profiles.isNotEmpty) {
-      profileId = widget.profiles.first.id;
-    }
+    name=TextEditingController(text:widget.initial?.name??'');
+    count=TextEditingController(text:widget.initial==null?'':'${widget.initial!.chicks}');
+    date=widget.initial?.hatchDate??DateTime.now();
+    profileId=widget.initial?.vaccineProfileId??defaultVaccineProfileId;
+    if(!widget.profiles.any((p)=>p.id==profileId)&&widget.profiles.isNotEmpty)profileId=widget.profiles.first.id;
   }
-
-  @override
-  Widget build(BuildContext context) => AlertDialog(
-    title: const Text('Batch ya vifaranga / Chick batch'),
-    content: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, children: [
-      TextField(controller: name, decoration: const InputDecoration(labelText: 'Jina la batch / Batch name')),
-      const SizedBox(height: 10),
-      TextField(controller: count, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Idadi ya vifaranga / Chick count')),
-      const SizedBox(height: 10),
+  @override Widget build(BuildContext context)=>AlertDialog(
+    title:Text(widget.initial==null?'Batch ya vifaranga / Chick batch':'Hariri batch / Edit batch'),
+    content:SingleChildScrollView(child:Column(mainAxisSize:MainAxisSize.min,children:[
+      TextField(controller:name,decoration:const InputDecoration(labelText:'Jina la batch / Batch name')),
+      const SizedBox(height:10),
+      TextField(controller:count,keyboardType:TextInputType.number,decoration:const InputDecoration(labelText:'Idadi ya vifaranga / Chick count')),
+      const SizedBox(height:10),
       DropdownButtonFormField<String>(
-        value: profileId,
-        decoration: const InputDecoration(labelText: 'Vaccination profile'),
-        items: widget.profiles.map((p) => DropdownMenuItem(value: p.id, child: Text('${p.nameSw} / ${p.nameEn}'))).toList(),
-        onChanged: (v) => setState(() => profileId = v ?? profileId),
+        initialValue:profileId,
+        decoration:const InputDecoration(labelText:'Vaccination profile'),
+        items:widget.profiles.map((p)=>DropdownMenuItem(value:p.id,child:Text('${p.nameSw} / ${p.nameEn}'))).toList(),
+        onChanged:(v)=>setState(()=>profileId=v??profileId),
       ),
-      const SizedBox(height: 10),
-      ListTile(
-        contentPadding: EdgeInsets.zero,
-        title: const Text('Tarehe ya kutotolewa / Hatch date'),
-        subtitle: Text(fmt(date)),
-        trailing: const Icon(Icons.calendar_month),
-        onTap: () async {
-          final d = await showDatePicker(context: context, initialDate: date, firstDate: DateTime(2020), lastDate: DateTime(2040));
-          if (d != null) setState(() => date = d);
-        },
-      ),
+      const SizedBox(height:10),
+      ListTile(contentPadding:EdgeInsets.zero,title:const Text('Tarehe ya kutotolewa / Hatch date'),subtitle:Text(fmt(date)),trailing:const Icon(Icons.calendar_month),onTap:()async{
+        final d=await showDatePicker(context:context,initialDate:date,firstDate:DateTime(2020),lastDate:DateTime(2040));
+        if(d!=null)setState(()=>date=d);
+      }),
     ])),
-    actions: [
-      TextButton(onPressed: () => Navigator.pop(context), child: const Text('Ghairi / Cancel')),
-      FilledButton(
-        onPressed: () {
-          final n = int.tryParse(count.text);
-          if (name.text.trim().isEmpty || n == null || n <= 0) return;
-          Navigator.pop(context, ChickBatch(
-            id: DateTime.now().microsecondsSinceEpoch.toString(),
-            name: name.text.trim(),
-            chicks: n,
-            hatchDate: date,
-            vaccineProfileId: profileId,
-          ));
-        },
-        child: const Text('Hifadhi + alarms / Save'),
-      ),
+    actions:[
+      TextButton(onPressed:()=>Navigator.pop(context),child:const Text('Ghairi / Cancel')),
+      FilledButton(onPressed:(){
+        final n=int.tryParse(count.text);
+        if(name.text.trim().isEmpty||n==null||n<=0)return;
+        final old=widget.initial;
+        Navigator.pop(context,ChickBatch(
+          id:old?.id??DateTime.now().microsecondsSinceEpoch.toString(),
+          name:name.text.trim(),chicks:n,hatchDate:date,
+          mortality:old?.mortality??0,vaccineProfileId:profileId,
+        ));
+      },child:Text(widget.initial==null?'Hifadhi + alarms / Save':'Update + reschedule')),
     ],
   );
 }
 
 class AddIncubatorDialog extends StatefulWidget {
-  const AddIncubatorDialog({super.key});
-  @override
-  State<AddIncubatorDialog> createState() => _AddIncubatorDialogState();
+  final Incubator? initial;
+  const AddIncubatorDialog({super.key,this.initial});
+  @override State<AddIncubatorDialog> createState()=>_AddIncubatorDialogState();
 }
-class _AddIncubatorDialogState extends State<AddIncubatorDialog> {
-  final name = TextEditingController(); final capacity = TextEditingController(); final notes = TextEditingController();
-  @override
-  Widget build(BuildContext context) => AlertDialog(title: const Text('Ongeza incubator'), content: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, children: [TextField(controller: name, decoration: const InputDecoration(labelText: 'Jina / namba')), const SizedBox(height: 10), TextField(controller: capacity, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Capacity ya mayai')), const SizedBox(height: 10), TextField(controller: notes, decoration: const InputDecoration(labelText: 'Maelezo (optional)'))])), actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('Ghairi')), FilledButton(onPressed: () { final c = int.tryParse(capacity.text); if (name.text.trim().isEmpty || c == null || c <= 0) return; Navigator.pop(context, Incubator(id: DateTime.now().microsecondsSinceEpoch.toString(), name: name.text.trim(), capacity: c, notes: notes.text.trim())); }, child: const Text('Hifadhi'))]);
+class _AddIncubatorDialogState extends State<AddIncubatorDialog>{
+  late final TextEditingController name,capacity,notes;
+  @override void initState(){
+    super.initState();
+    name=TextEditingController(text:widget.initial?.name??'');
+    capacity=TextEditingController(text:widget.initial==null?'':'${widget.initial!.capacity}');
+    notes=TextEditingController(text:widget.initial?.notes??'');
+  }
+  @override Widget build(BuildContext context)=>AlertDialog(
+    title:Text(widget.initial==null?'Ongeza incubator':'Hariri incubator'),
+    content:SingleChildScrollView(child:Column(mainAxisSize:MainAxisSize.min,children:[
+      TextField(controller:name,decoration:const InputDecoration(labelText:'Jina / namba')),
+      const SizedBox(height:10),
+      TextField(controller:capacity,keyboardType:TextInputType.number,decoration:const InputDecoration(labelText:'Capacity ya mayai')),
+      const SizedBox(height:10),
+      TextField(controller:notes,decoration:const InputDecoration(labelText:'Maelezo (optional)')),
+    ])),
+    actions:[
+      TextButton(onPressed:()=>Navigator.pop(context),child:const Text('Ghairi')),
+      FilledButton(onPressed:(){
+        final c=int.tryParse(capacity.text);
+        if(name.text.trim().isEmpty||c==null||c<=0)return;
+        Navigator.pop(context,Incubator(id:widget.initial?.id??DateTime.now().microsecondsSinceEpoch.toString(),name:name.text.trim(),capacity:c,notes:notes.text.trim()));
+      },child:Text(widget.initial==null?'Hifadhi':'Update')),
+    ],
+  );
 }
 
 class EnvironmentDialog extends StatefulWidget {
   final String incubatorId;
-  const EnvironmentDialog({super.key, required this.incubatorId});
-  @override
-  State<EnvironmentDialog> createState() => _EnvironmentDialogState();
+  final EnvironmentRecord? initial;
+  const EnvironmentDialog({super.key, required this.incubatorId, this.initial});
+  @override State<EnvironmentDialog> createState()=>_EnvironmentDialogState();
 }
-class _EnvironmentDialogState extends State<EnvironmentDialog> {
-  final t = TextEditingController(); final h = TextEditingController();
-  @override
-  Widget build(BuildContext context) => AlertDialog(title: const Text('Temperature & Humidity'), content: Column(mainAxisSize: MainAxisSize.min, children: [TextField(controller: t, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: 'Temperature °C')), const SizedBox(height: 10), TextField(controller: h, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: 'Humidity % RH'))]), actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('Ghairi')), FilledButton(onPressed: () { final tv = double.tryParse(t.text); final hv = double.tryParse(h.text); if (tv == null || hv == null) return; Navigator.pop(context, EnvironmentRecord(id: DateTime.now().microsecondsSinceEpoch.toString(), incubatorId: widget.incubatorId, time: DateTime.now(), temperature: tv, humidity: hv)); }, child: const Text('Hifadhi'))]);
+class _EnvironmentDialogState extends State<EnvironmentDialog>{
+  late final TextEditingController temp,humidity;
+  @override void initState(){
+    super.initState();
+    temp=TextEditingController(text:widget.initial==null?'':'${widget.initial!.temperature}');
+    humidity=TextEditingController(text:widget.initial==null?'':'${widget.initial!.humidity}');
+  }
+  @override Widget build(BuildContext context)=>AlertDialog(
+    title:Text(widget.initial==null?'Temperature & Humidity':'Edit Temperature & Humidity'),
+    content:Column(mainAxisSize:MainAxisSize.min,children:[
+      TextField(controller:temp,keyboardType:const TextInputType.numberWithOptions(decimal:true),decoration:const InputDecoration(labelText:'Temperature °C')),
+      const SizedBox(height:10),
+      TextField(controller:humidity,keyboardType:const TextInputType.numberWithOptions(decimal:true),decoration:const InputDecoration(labelText:'Humidity % RH')),
+    ]),
+    actions:[
+      TextButton(onPressed:()=>Navigator.pop(context),child:const Text('Ghairi')),
+      FilledButton(onPressed:(){
+        final tv=double.tryParse(temp.text),hv=double.tryParse(humidity.text);
+        if(tv==null||hv==null)return;
+        Navigator.pop(context,EnvironmentRecord(
+          id:widget.initial?.id??DateTime.now().microsecondsSinceEpoch.toString(),
+          incubatorId:widget.incubatorId,time:widget.initial?.time??DateTime.now(),temperature:tv,humidity:hv,
+        ));
+      },child:Text(widget.initial==null?'Hifadhi':'Update')),
+    ],
+  );
 }
 
 class CandlingCountDialog extends StatefulWidget {
